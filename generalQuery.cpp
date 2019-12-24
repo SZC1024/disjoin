@@ -424,6 +424,7 @@ bool generalQuery::decomposePlan(PlanTree* generalPlanTree,vector<PlanTree*>* pl
         cout<<endl;
     }
 
+
     return true;
 }
 
