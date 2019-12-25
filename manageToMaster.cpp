@@ -25,12 +25,13 @@ manageToMaster::manageToMaster(){
 }
 
 size_t manageToMaster:: addQuery(string str){
+    cout<<"查询ID   ：              "<<queryId<<endl;  
+    size_t qu = queryId;
+    generalQuery* query = new generalQuery(qu, str);
     
-    generalQuery* query = new generalQuery(manageToMaster::queryId, str);
-    
-    queryRef[manageToMaster::queryId] = query;
-     manageToMaster::queryId ++;
-    return manageToMaster::queryId - 1;
+    queryRef[queryId] = query;
+     queryId ++;
+    return queryId - 1;
 }
 
 bool manageToMaster:: removeQuery(size_t id1){
