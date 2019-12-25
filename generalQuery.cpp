@@ -16,7 +16,7 @@ generalQuery::generalQuery(){
 
 //根据ID和str创建查询
 generalQuery::generalQuery(size_t id, string str){
-    
+    cout<<"查询类ID："<<id<<endl;
     ID = id;
     queryStr =str;
     MaxSubID = 1;
@@ -439,12 +439,17 @@ bool generalQuery::sendPlan(){
         partitionToSub* temp = partSub[i];
         size_t count = temp->getSubPlanSize();
         vector<structPlan> temp2 = temp->getSubPlan();
+	//如果只有一个不执行
+	if(temp2.at(0).ID == 0) count = 0;
+
+	cout<<"查询计划："<< i <<"计划大小 "<< temp2.size() <<endl;
         client* cl = clRef[i];
         cl->mySend((void*)"plan", 5);
 	size_t id_10 = ID;
+	cout<<"发送查询计划时候的ID"<<ID<<endl;
 	cl->mySend(&id_10, sizeof(size_t));
         cl->mySend(&count, sizeof(size_t));
-        for(size_t j = 0; j < temp2.size(); j++){
+        for(size_t j = 0; j < temp2.size() && temp2.at(0).ID != 0; j++){
             size_t id = temp2.at(j).ID;
             int type1 = temp2.at(j).type;
             cl->mySend(&id, sizeof(size_t));
@@ -497,8 +502,48 @@ bool generalQuery::mystart(){
         
         cout<<"发送全局查询计划失败"<<endl;
     }
+    if(!waitResult()){
+	    cout<<"发送结果出错"<<endl;
+    }
     
     return true;
+}
+
+//接收结果
+bool generalQuery:: waitResult(){
+
+vector<vector<vector<size_t> > > reVV;
+    for(size_t i = 1; i < clRef.size() + 1; i++){
+	vector<vector<size_t> > reVec;
+       	client * cl = clRef[i];
+	size_t idC;
+	size_t idS; 
+	size_t countA; 
+						            
+	cl->myRec(&idC);
+	cl->myRec(&idS);
+	cl->myRec(&countA);
+	for(size_t j = 0; j < countA; j++){
+	size_t line;
+	cl->myRec(&line);
+	vector<size_t> re;
+	for(size_t k = 0; k < line; k++){
+	size_t re_1;
+	cl->myRec(&re_1);
+	if(re_1 == 0) break;
+	  else re.push_back(re_1);
+	}	
+	if(!re.empty()) reVec.push_back(re);
+	}
+	if(!reVec.empty()) reVV.push_back(reVec);
+	}
+
+	for(size_t i = 0; i < reVV.size(); i++){
+	for(size_t j = 0; j < reVV[i].size(); j++){
+	result.push_back(reVV[i].at(j));
+	}
+	}
+	return true;
 }
 
 //返回查询结果
@@ -576,6 +621,7 @@ bool generalQuery::createGlobalRef(){
         vector<size_t> sub = temp->getAllSubID();
         for(auto it_2 = sub.begin(); it_2 != sub.end(); it_2++){
             globalIDRef[*it_2] = it->first;
+            cout<<"id :"<<*it_2<<"在"<< it->first<<endl;
         }
     }
     return true;
@@ -602,7 +648,7 @@ bool generalQuery::sendGlobalRef(){
 	    size_t id_5[2];
 	    id_5[0] = id1;
 	    id_5[1] = node;
-            cl->mySend(&id1, sizeof(id_5));
+            cl->mySend(&id_5, sizeof(id_5));
         }
     }
     return true;

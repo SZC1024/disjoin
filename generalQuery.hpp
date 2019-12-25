@@ -60,6 +60,7 @@ public:
     string queryDecomposeFile(string& queryFile);  //分解查询文件
     //将查询语句分解成子查询数组，赋值查询变量名数组
     bool queryComposeToVec(const char* querySen);
+    bool waitResult();
     vector<vector<size_t> > getResult();
     
 };
