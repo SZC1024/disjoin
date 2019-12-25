@@ -8,6 +8,8 @@
 
 #include "generalQuery.hpp"
 
+const int _debug_for_szc_ = 0 ;
+
 generalQuery::generalQuery(){
     
     ID = 0;
@@ -206,9 +208,8 @@ bool generalQuery:: createParition(){
             //调用接口得到该查询语句大概有多少条
             size_t temp = 0;
            // temp = 1000;
-	   cout<<"getRsultSzie: "<<endl;
-	  
-            temp = 1000;
+	   cout<<"getRsultSzie: "<<endl;	  
+            temp = getResultSize(subStr.at(j), i);
             if(temp == 0){
                 continue;
             }
@@ -236,9 +237,13 @@ bool generalQuery::createPlan(){
     //（另外在调用join与union函数的时候需要传参subquery的id，这个id在本类中以MaxSubID参数实现）
     //总查询树构建结束之后进行分解（根据subquery的类型（type参数））
 
+
+if(_debug_for_szc_==1){
     for(auto i:subStr){
         cout<<"subStr:"<<i<<endl;
     }
+}
+
 
 
     map<size_t,subQuery*> idtosubq;//第一个参数为ID
@@ -249,33 +254,41 @@ bool generalQuery::createPlan(){
         }
     }
 
+if(_debug_for_szc_==1){
     for(auto i:idtosubq){
         cout<<"初始idtosubq:"<<i.first<<"\t"<<i.second->getID()<<"\t"<<i.second->getType()<<endl;
     }
+}
 
-    cout<<"断点1"<<endl;
     map<size_t,int> flag;//第一个参数表示subQuery的ID，第二个参数表示该subQuery是否被union（1）以及join（2）过，从未是0
     map<size_t,size_t> tree;//第一个参数表示树中的结点id，第二个参数表示该节点的父节点，根节点的父节点为0
     for(map<size_t,subQuery*>::iterator iter=idtosubq.begin();iter!=idtosubq.end();iter++) flag[iter->first]=0;
 
+if(_debug_for_szc_==1){
     for(auto i:flag){
         cout<<"初始flag:"<<i.first<<"\t"<<i.second<<endl;
     }
+}
 
-    cout<<"断点3"<<endl;
     //此时idtosubq内存储subquery的指针
     for(map<size_t,subQuery*>::iterator i=idtosubq.begin();i!=idtosubq.end();i++){//生成所有union
-	    cout<<"外层循环i:"<<i->first<<endl;
+
+if(_debug_for_szc_==1) cout<<"外层循环i:"<<i->first<<endl;
+
         if(flag[i->first]==0){//说明左孩子可以unoin
             //开始寻找右孩子
             map<size_t, subQuery*>::iterator j = i;
             j++;
             for(;j!=idtosubq.end();j++){
-		        cout<<"内层循环j:"<<j->first<<endl;		
+
+if(_debug_for_szc_==1) cout<<"内层循环j:"<<j->first<<endl;
+
                 if(flag[j->first]==0){//说明右孩子可以union
                     //生成所有的union类型子查询类
                     if(i->second->isCommon(*(j->second)) == 1){//这里需要知道返回值的意义
-                        cout<<"内层if:"<<i->second->isCommon(*(j->second))<<"\t MaxSubID:"<<MaxSubID<<endl;
+
+if(_debug_for_szc_==1) cout<<"内层if:"<<i->second->isCommon(*(j->second))<<"\t MaxSubID:"<<MaxSubID<<endl;
+
                         idtosubq[MaxSubID]=i->second->Union(*(j->second),MaxSubID);
                         flag[i->first]=1;
                         flag[j->first]=1;
@@ -284,26 +297,38 @@ bool generalQuery::createPlan(){
                         tree[i->first]=MaxSubID;
                         tree[j->first]=MaxSubID;
                         MaxSubID++;
-			            break;
+			            break;//内层循环通过这里之后让他直接结束，因为j必定被使用过了，不需要坐后边的判断
                     }
                 }
             }
         }
     }
-    cout<<"断点2"<<endl;
     //union结束，开始join，原理同上
+
+if(_debug_for_szc_==1){
     for(map<size_t,subQuery*>::iterator i=idtosubq.begin();i!=idtosubq.end();i++){
-        cout<<"循环2外层循环i:"<<i->first<<endl;
+        cout<<"join之前idtosubq中id="<<i->first<<"\ttype="<<i->second->getType()<<endl;
+    }
+}
+
+
+    for(map<size_t,subQuery*>::iterator i=idtosubq.begin();i!=idtosubq.end();i++){
+
+if(_debug_for_szc_==1) cout<<"循环2外层循环i:"<<i->first<<endl;
 
         if(flag[i->first]==0){//说明左孩子可以join
             map<size_t, subQuery*>::iterator j = i;
             j++;
             for(;j!=idtosubq.end();j++){
-                cout<<"循环2内层循环j:"<<j->first<<endl;
+
+if(_debug_for_szc_==1) cout<<"循环2内层循环j:"<<j->first<<endl;
+
                 if(flag[j->first]==0){//说明右孩子可以join
                     vector<string> temp;
                     if(i->second->findCommonValName(*(j->second),temp)){//这里需要知道返回值的意义
-                        cout<<"内层if:"<<i->second->findCommonValName(*(j->second),temp)<<"\t MaxSubID:"<<MaxSubID<<endl;
+
+if(_debug_for_szc_==1) cout<<"内层if:"<<i->second->findCommonValName(*(j->second),temp)<<"\t MaxSubID:"<<MaxSubID<<endl;
+
                         idtosubq[MaxSubID]=i->second->Join(*(j->second),MaxSubID);
                         flag[i->first]=2;
                         flag[j->first]=2;
@@ -312,6 +337,7 @@ bool generalQuery::createPlan(){
                         tree[i->first]=MaxSubID;
                         tree[j->first]=MaxSubID;
                         MaxSubID++;
+                        break;//内层循环通过这里之后让他直接结束，因为j必定被使用过了，不需要坐后边的判断
                     }
                 }
             }
@@ -319,19 +345,26 @@ bool generalQuery::createPlan(){
     }
     //join结束之后只剩最大id的flag的value对应的是0
     //接下来该利用tree生成查询计划树
-    cout<<"分解查询计划前"<<endl;
+if(_debug_for_szc_==1){
+    cout<<"下面打印出最终的tree，flag，idtosubq结构"<<endl;
     for(auto i:tree){
         cout<<"tree:"<<i.first<<"\t"<<i.second<<endl;
+    }
+    for(auto i:flag){
+        cout<<"flag:"<<i.first<<"\t"<<i.second<<endl;
     }
     for(auto i:idtosubq){
         cout<<"idtosubq:"<<i.first<<"\t"<<i.second->getID()<<"\t"<<i.second->getType()<<endl;
     }
+}
+
+if(_debug_for_szc_==1) cout<<"开始创建PlanTree"<<endl;
     PlanTree* generalPlanTree = new PlanTree(&tree, idtosubq);
-    cout<<"1"<<endl;
+if(_debug_for_szc_==1) cout<<"创建PlanTree结束"<<endl;
     vector<PlanTree*>* planTreeForEachPartition = nullptr;
-    cout<<"2"<<endl;
+if(_debug_for_szc_==1) cout<<"开始进入分解计划"<<endl;
     decomposePlan(generalPlanTree, planTreeForEachPartition, partSub.size());
-    cout<<"分解查询计划以后"<<endl;
+if(_debug_for_szc_==1) cout<<"分解查询计划结束，并将各partition的执行计划已下发"<<endl;
     return true;
 }
 
@@ -347,18 +380,25 @@ void printTree(TreeNode* node){
 
 //分解查询计划，直接将查询计划复制到分区的子查询计划中
 bool generalQuery::decomposePlan(PlanTree* generalPlanTree,vector<PlanTree*>* planTreeForEachPartition,size_t num){
-    cout<<"进入查询计划"<<endl;
+
+if(_debug_for_szc_==1) cout<<"进入分解计划"<<endl;
     
     printTree(generalPlanTree->root);//这里的输出显示建树成功，plantree的结构的对的
-    cout<<"↖plantree↗"<<endl;
+
+if(_debug_for_szc_==1) cout<<"↖分解之前plantree↗"<<endl;
+if(_debug_for_szc_==1) cout<<"开始正式分解"<<endl;
 
     planTreeForEachPartition = generalPlanTree->decomposePlanTree(num);
 
+if(_debug_for_szc_==1) cout<<"分解正式结束"<<endl;
+if(_debug_for_szc_==1) cout<<"打印出所有分解结果"<<endl;
+if(_debug_for_szc_==1){
     for(int i=0;i<planTreeForEachPartition->size();i++){
         printTree(planTreeForEachPartition->at(i)->root);
         cout<<"↖i="<<i<<"↗"<<endl;
-
     }
+}
+if(_debug_for_szc_==1) cout<<"开始将各个分解之后计划树转换为vector"<<endl;
 
     vector<vector<structPlan>*>* partitionPlan=new vector<vector<structPlan>*>();//里边存了每个partition的structPlan数组，用来发给每个partition
     for (size_t i = 0; i < planTreeForEachPartition->size(); i++) {
@@ -366,14 +406,18 @@ bool generalQuery::decomposePlan(PlanTree* generalPlanTree,vector<PlanTree*>* pl
         PlanTree* each = planTreeForEachPartition->at(i);
         each->toCompleteBinaryTree(each->root);
 
-        printTree(each->root);//输出显示这里的完全二叉树结构也是正确的
-        cout<<"↖complete tree i="<<i<<"↗"<<endl;
+if(_debug_for_szc_==1){
+    printTree(each->root);//输出显示这里的完全二叉树结构也是正确的
+    cout<<"↖complete tree i="<<i<<"↗"<<endl;
+}
 
         vector<TreeNode*>* eachTreeNodeVector = each->completeBinaryTreeToVector(each->root);
 
-        for(int ii=0;ii<eachTreeNodeVector->size();ii++){
-            cout<<"tree node vector "<<ii<<"\t"<<eachTreeNodeVector->at(ii)->id<<"\t"<<eachTreeNodeVector->at(ii)->type<<endl;
-        }//输出显示这里的vector结构正确，是完全二叉树的数组存储法
+if(_debug_for_szc_==1){
+    for(int ii=0;ii<eachTreeNodeVector->size();ii++){
+        cout<<"tree node vector "<<ii<<"\t"<<eachTreeNodeVector->at(ii)->id<<"\t"<<eachTreeNodeVector->at(ii)->type<<endl;
+    }//输出显示这里的vector结构正确，是完全二叉树的数组存储法
+}
 
         vector<structPlan>* eachstructPlanVector=new vector<structPlan>();//这里不应该用栈变量，不然的话跳出语法块就被销毁了
         for (size_t j = 0; j < eachTreeNodeVector->size(); j++) {
@@ -388,15 +432,19 @@ bool generalQuery::decomposePlan(PlanTree* generalPlanTree,vector<PlanTree*>* pl
             eachstructPlanVector->push_back(*temp);
         }
         
-        for(int ii=0;ii<eachstructPlanVector->size();ii++){
-            cout<<"eachstructPlanVector "<<ii<<":"<<eachstructPlanVector->at(ii).ID<<"\t"<<eachstructPlanVector->at(ii).type<<endl;
-        }//这里输出说明structPlanVector的结构是正确的
+if(_debug_for_szc_==1){
+    for(int ii=0;ii<eachstructPlanVector->size();ii++){
+        cout<<"eachstructPlanVector "<<ii<<":"<<eachstructPlanVector->at(ii).ID<<"\t"<<eachstructPlanVector->at(ii).type<<endl;
+    }//这里输出说明structPlanVector的结构是正确的
+}
 
         //TreeNode vector到structPlan vector转换结束。为eachstructPlanVector
         //接下来将eachstructPlanVector复制到每个partition的子查询计划中
         partitionPlan->push_back(eachstructPlanVector);
     }
 
+if(_debug_for_szc_==1) cout<<"PlanTree转换vector结束，开始将vector下发给各partition"<<endl;
+    
     //暂时只将总查询计划下发
     size_t selected = 2;
     partSub[selected]->alterSubPlan(*(partitionPlan->at(0)));//这里的alterSubPlan的实现用了swap函数，所以导致我在后边查partitionPlan查不出东西
@@ -411,18 +459,20 @@ bool generalQuery::decomposePlan(PlanTree* generalPlanTree,vector<PlanTree*>* pl
         }
     }
 
+if(_debug_for_szc_==1) cout<<"任务下发结束，本模块结束"<<endl;
+
     //通过注释上边包含alterSubPlan函数的代码块，这里的输出显示出传给alterSubPlan的vector结构正确
-    for(int i=0;i<partitionPlan->size();i++){
-        cout<<"i="<<i<<endl;
-        for(int j=0;j<partitionPlan->at(i)->size();j++){
-            cout<<partitionPlan->at(i)->at(j).ID<<"\t";
-        }
-        cout<<endl;
-        for(int j=0;j<partitionPlan->at(i)->size();j++){
-            cout<<partitionPlan->at(i)->at(j).type<<"\t";
-        }
-        cout<<endl;
-    }
+    // for(int i=0;i<partitionPlan->size();i++){
+    //     cout<<"i="<<i<<endl;
+    //     for(int j=0;j<partitionPlan->at(i)->size();j++){
+    //         cout<<partitionPlan->at(i)->at(j).ID<<"\t";
+    //     }
+    //     cout<<endl;
+    //     for(int j=0;j<partitionPlan->at(i)->size();j++){
+    //         cout<<partitionPlan->at(i)->at(j).type<<"\t";
+    //     }
+    //     cout<<endl;
+    // }
 
     return true;
 }

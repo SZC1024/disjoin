@@ -15,7 +15,6 @@ PlanTree::PlanTree(){
 PlanTree::PlanTree(map<size_t,size_t>* tree, map<size_t, subQuery*> idtosubq){
     for(map<size_t,size_t>::reverse_iterator iter=tree->rbegin();iter!=tree->rend();iter++){
         //先遍历一遍，生成id，parent和type信息  (weight信息暂不使用)
-	cout<<"11111"<<endl;
         if (idtonode.find(iter->first)==idtonode.end()) {
             idtonode[iter->first] = new TreeNode();
             idtonode[iter->first]->id = iter->first;
@@ -26,7 +25,6 @@ PlanTree::PlanTree(map<size_t,size_t>* tree, map<size_t, subQuery*> idtosubq){
     }
     for (map<size_t, TreeNode*>::iterator iter = idtonode.begin(); iter != idtonode.end();iter++) {
         //再遍历一遍，生成该节点的父节点的left和right信息
-	cout<<"222222222"<<endl;
         if ( iter->second!=root ) {
             if (iter->second->parent->left==NULL) {
                 iter->second->parent->left = iter->second;
