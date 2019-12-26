@@ -223,7 +223,7 @@ bool generalQuery:: createParition(){
         }
         partSub[i] = new partitionToSub(i, umap, umap_re, umap_name);
     }
-    
+
     return true;
 }
 
