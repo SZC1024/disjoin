@@ -22,7 +22,7 @@
 #include <algorithm>
 #include <fstream>
 #include<unordered_set>
-#include "./gan/Master.h"
+//#include "./gan/Master.h"
 #define PORT 10008
 using namespace std;
 

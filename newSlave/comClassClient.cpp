@@ -1,12 +1,13 @@
 //
-//  client.cpp
-//  Master
+//  comClassClient.cpp
+//  garphDatabase
 //
-//  Created by 周华健 on 2019/12/18.
+//  Created by 周华健 on 2019/12/17.
 //  Copyright © 2019 周华健. All rights reserved.
-// Master节点的通信客户端
+//  slave节点客户端
 
-#include "client.hpp"
+#include "comClassClient.hpp"
+//client
 
 client::client(string ip, unsigned int port1){
     
@@ -18,7 +19,7 @@ client::client(string ip, unsigned int port1){
 bool client::createSocket(){
     
     socketID = socket(AF_INET, SOCK_STREAM, 0);
-    cout<<"套接字: "<<socketID<<endl;
+    
     memset(&serverAddr, 0, sizeof(serverAddr));
     
     serverAddr.sin_family = AF_INET;
@@ -30,11 +31,10 @@ bool client::createSocket(){
 
 //链接服务端
 bool client::myConnect(){
-    cout<<"ip: "<<IPServer<<" "<<"端口："<<port<<endl;
+    
     if(connect(socketID, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0){
         cout<<"客户端链接失败："<<endl;
-       // exit(0);
-       return false;
+        exit(0);
     }
     return true;
 }
@@ -46,12 +46,7 @@ bool client::mySend(void* buffer, size_t size){
     size_t index;
     index = size;
     err = send(socketID, &index, sizeof(size_t), 0);
-    if(err <= 0){
-	 cout<<"发送串长度："<<err<<endl;
-	 myclose();
-	 return false;
-    }
-    //cout<<"发送串长度："<<err<<endl;
+   // cout<<"发送串长度："<<err<<endl;
     index = 0;
     while (size) {
         if(size > 4096){
@@ -77,12 +72,12 @@ bool client::myRec(void *buffer){
     
     err = recv(socketID, &size, sizeof(size_t), 0);
     memset(buffer, 0, size);
-    if(err <= 0){
-	//cout<<"接受串长度："<<err<<endl;
-        myclose();
-	return false;
-    }
     //cout<<"接受串长度："<<err<<endl;
+    if(err <= 0){
+        cout<<"客户端接收失败"<<endl;
+        close(socketID);
+        return false;
+    }
     while(size){
         err = recv(socketID, (char*)buffer + index, size, 0);
         if(err == -1) break;
@@ -101,13 +96,13 @@ string client:: getIPServer() const{
 }
 
 //得到服务器端口
-unsigned int client:: getPort() const{
+unsigned int client::getPort() const{
     
     return port;
 }
 
 //得到套接字
-int client:: getSocketID() const{
+int client::getSocketID() const{
     
     return socketID;
 }
