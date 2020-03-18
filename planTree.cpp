@@ -1,10 +1,3 @@
-//
-//  planTree.cpp
-//  Master
-//
-//  Created by 周华健 on 2019/12/23.
-//  Copyright © 2019 周华健. All rights reserved.
-//
 #include "planTree.hpp"
 
 PlanTree::PlanTree(){

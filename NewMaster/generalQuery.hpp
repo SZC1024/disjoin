@@ -1,11 +1,3 @@
-//
-//  generalQuery.hpp
-//  Master
-//
-//  Created by 周华健 on 2019/12/18.
-//  Copyright © 2019 周华健. All rights reserved.
-//  一个查询语句类
-
 #ifndef generalQuery_hpp
 #define generalQuery_hpp
 
@@ -22,7 +14,7 @@
 #include <algorithm>
 #include <fstream>
 #include<unordered_set>
-//#include "./gan/Master.h"
+// #include "../gan/Master.h"
 #define PORT 10008
 using namespace std;
 

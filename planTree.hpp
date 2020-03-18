@@ -1,11 +1,3 @@
-//
-//  planTree.hpp
-//  Master
-//
-//  Created by 周华健 on 2019/12/23.
-//  Copyright © 2019 周华健. All rights reserved.
-//
-
 #ifndef planTree_hpp
 #define planTree_hpp
 

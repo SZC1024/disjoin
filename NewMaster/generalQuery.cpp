@@ -1,11 +1,3 @@
-//
-//  generalQuery.cpp
-//  Master
-//
-//  Created by 周华健 on 2019/12/18.
-//  Copyright © 2019 周华健. All rights reserved.
-//
-
 #include "generalQuery.hpp"
 
 const int _debug_for_szc_ = 0 ;
@@ -238,6 +230,7 @@ bool generalQuery::createPlan(){
         }
     }
 
+    //将所有分区内的所有子查询汇集起来，存储在idtosubq里边
     map<size_t,subQuery*> idtosubq;//第一个参数为ID
     for(auto pts:partSub){
         vector<size_t> subid = pts.second->getAllSubID();
@@ -350,12 +343,16 @@ if(_debug_for_szc_== 1){
     }
 
 if(_debug_for_szc_==1) cout<<"开始创建PlanTree"<<endl;
+
     PlanTree* generalPlanTree = new PlanTree(&tree, idtosubq);
 if(_debug_for_szc_==1) cout<<"创建PlanTree结束"<<endl;
+
     vector<PlanTree*>* planTreeForEachPartition = nullptr;
 if(_debug_for_szc_==1) cout<<"开始进入分解计划"<<endl;
+
     decomposePlan(generalPlanTree, planTreeForEachPartition, partSub.size());
 if(_debug_for_szc_==1) cout<<"分解查询计划结束，并将各partition的执行计划已下发"<<endl;
+    
     return true;
 }
 
