@@ -24,6 +24,7 @@ PredicateTable *preTable;
 URITable *uriTable;
 /// statistics buffer;
 StatisticsBuffer **statBuffer[SLAVE_NUM];
+MMapBuffer *indexBufferFile[SLAVE_NUM];
 
 /*
   此函数为int转换成string函数专用
@@ -469,30 +470,35 @@ int createDatabase(string &dataFile, vector <string> &slaveName, string &last, s
 	}
 	builder->endBuild();
 	delete builder;
-	
-	/*for (int i = 0; i < SLAVE_NUM; ++i) {
-		formatTempFile(*slavesTempFile[i], targetDir);
-	}*/
+
+//	for (int i = 0; i < SLAVE_NUM; ++i) {
+//		formatTempFile(*slavesTempFile[i], targetDir);
+//	}
 	
 	for (int i = 0; i < SLAVE_NUM; ++i) {
 		delete slavesTempFile[i];
 	}
 	
+	
+	
 	// Created by peng on 2019-12-23, 15:38:07
 	// 加载table和索引，并测试查询语句转换，释放table和索引
-	/*loadTableAndStatistic(targetDir);
+	loadTableAndStatistic(targetDir);
 	
 	for (unsigned i = 1; i <= 8; ++i) {
 		ifstream ifs("queryLUBM" + std::to_string(i));
+		//ifstream ifs("queryLUBM1");
 		string line;
 		string queryStr = "";
 		while (getline(ifs, line)) {
 			queryStr += line + '\n';
 		}
-		cout << transformQuery(queryStr) << endl;
+		string transQuery = transformQuery(queryStr);
+		cout << "transQuery: " << transQuery << endl;
+		cout << "getResultSize: " << getResultSize(transQuery, 0) << endl;
 	}
 	
-	releaseTableAndStatistic();*/
+	releaseTableAndStatistic();
 	
 	//分解数据文件
 	//subDataFile = dataDecompose(dataFile, last);
@@ -513,7 +519,6 @@ int createDatabase(string &dataFile, vector <string> &slaveName, string &last, s
 int loadTableAndStatistic(const string &dir) {
 	preTable = PredicateTable::load(dir);
 	uriTable = URITable::load(dir);
-	MMapBuffer *indexBufferFile[SLAVE_NUM];
 	for (int i = 0; i < SLAVE_NUM; ++i) {
 		string fileName = dir + "/statIndex-" + std::to_string(i);
 		cerr << "MMapBuffer " + fileName + " create" << endl;
@@ -539,9 +544,6 @@ int loadTableAndStatistic(const string &dir) {
 		statBuffer[i][3] = TwoConstantStatisticsBuffer::load(StatisticsBuffer::OBJECTPREDICATE_STATIS, statFilename,
 		                                                     indexBuffer);
 	}
-	for (int i = 0; i < SLAVE_NUM; ++i) {
-		delete indexBufferFile[i];
-	}
 	return 0;
 }
 
@@ -557,12 +559,7 @@ int releaseTableAndStatistic() {
 	preTable = NULL;
 	
 	for (int i = 0; i < SLAVE_NUM; ++i) {
-		for (int j = 0; j < 4; ++j) {
-			if (statBuffer[i][j] != NULL) {
-				delete statBuffer[i][j];
-			}
-			statBuffer[i][j] = NULL;
-		}
+		delete indexBufferFile[i];
 		delete statBuffer[i];
 	}
 	return 0;
@@ -734,12 +731,18 @@ string getPredicateByID(ID pid) {
 	return pre;
 }
 
+/**
+ * 调取统计表获取查询语句相关信息，此时查询语句已经转换
+ * @param query 已经转成ID的查询语句
+ * @param slaveID
+ * @return
+ */
 size_t getResultSize(string query, size_t slaveID) {
-	SPARQLLexer *lexer = new SPARQLLexer(query);
-	SPARQLParser *parser = new SPARQLParser(*lexer);
+	SlaveSPARQLLexer *lexer = new SlaveSPARQLLexer(query);
+	SlaveSPARQLParser *parser = new SlaveSPARQLParser(*lexer);
 	try {
 		parser->parse();
-	} catch (const SPARQLParser::ParserException &e) {
+	} catch (const SlaveSPARQLParser::ParserException &e) {
 		cout << "Parser error: " << e.message << endl;
 		return UINT_MAX;
 	}
@@ -754,24 +757,24 @@ size_t getResultSize(string query, size_t slaveID) {
 	
 	size_t rst = UINT_MAX;
 	bool flag = false;
-	SPARQLParser::PatternGroup &patternGroup = parser->getPatterns();
+	SlaveSPARQLParser::PatternGroup &patternGroup = parser->getPatterns();
 	
 	for (unsigned long i = 0; i < patternGroup.patterns.size(); ++i) {
-		SPARQLParser::Pattern &pattern = patternGroup.patterns[i];
+		SlaveSPARQLParser::Pattern &pattern = patternGroup.patterns[i];
 		
-		if (pattern.subject.type == SPARQLParser::Element::Variable) {
+		if (pattern.subject.type == SlaveSPARQLParser::Element::Variable) {
 			// Created by peng on 2019-12-21, 19:35:04
 			// 主语是变量
-			if (pattern.object.type == SPARQLParser::Element::Variable) {
+			if (pattern.object.type == SlaveSPARQLParser::Element::Variable) {
 				// Created by peng on 2019-12-21, 19:35:28
 				// 宾语也是变量
 				continue;
 			} else {
-				if (pattern.predicate.type == SPARQLParser::Element::Variable) {
+				if (pattern.predicate.type == SlaveSPARQLParser::Element::Variable) {
 					// Created by peng on 2019-12-21, 19:33:43
 					// 主变，宾非变，谓变
-					ID id, waste = 0;
-					uriTable->getIdByURI(pattern.object.value.c_str(), id);
+					ID id = stoul(pattern.object.value);
+					ID waste = 0;
 					statBuffer[slaveID][1]->getStatis(id, waste);
 					if (id < rst) {
 						rst = id;
@@ -780,9 +783,8 @@ size_t getResultSize(string query, size_t slaveID) {
 				} else {
 					// Created by peng on 2019-12-21, 19:34:14
 					// 主变，宾非变，谓非变
-					ID id, pid;
-					uriTable->getIdByURI(pattern.object.value.c_str(), id);
-					preTable->getIDByPredicate(pattern.predicate.value.c_str(), pid);
+					ID id = stoul(pattern.object.value);
+					ID pid = stoul(pattern.predicate.value);
 					statBuffer[slaveID][3]->getStatis(id, pid);
 					if (id < rst) {
 						rst = id;
@@ -793,14 +795,14 @@ size_t getResultSize(string query, size_t slaveID) {
 		} else {
 			// Created by peng on 2019-12-21, 19:35:17
 			// 主语不是变量
-			if (pattern.object.type == SPARQLParser::Element::Variable) {
+			if (pattern.object.type == SlaveSPARQLParser::Element::Variable) {
 				// Created by peng on 2019-12-21, 19:35:28
 				// 宾语是变量
-				if (pattern.predicate.type == SPARQLParser::Element::Variable) {
+				if (pattern.predicate.type == SlaveSPARQLParser::Element::Variable) {
 					// Created by peng on 2019-12-21, 19:49:29
 					// 主非变，宾变，谓变
-					ID id, waste;
-					uriTable->getIdByURI(pattern.subject.value.c_str(), id);
+					ID id = stoul(pattern.subject.value);
+					ID waste = 0;
 					statBuffer[slaveID][0]->getStatis(id, waste);
 					if (id < rst) {
 						rst = id;
@@ -809,9 +811,8 @@ size_t getResultSize(string query, size_t slaveID) {
 				} else {
 					// Created by peng on 2019-12-21, 19:50:15
 					// 主非变，宾变，谓非变
-					ID id, pid;
-					uriTable->getIdByURI(pattern.subject.value.c_str(), id);
-					preTable->getIDByPredicate(pattern.predicate.value.c_str(), pid);
+					ID id = stoul(pattern.subject.value);
+					ID pid = stoul(pattern.predicate.value);
 					statBuffer[slaveID][2]->getStatis(id, pid);
 					if (id < rst) {
 						rst = id;
@@ -819,7 +820,7 @@ size_t getResultSize(string query, size_t slaveID) {
 					}
 				}
 			} else {
-				if (pattern.predicate.type == SPARQLParser::Element::Variable) {
+				if (pattern.predicate.type == SlaveSPARQLParser::Element::Variable) {
 					// Created by peng on 2019-12-21, 19:33:43
 					// 主非变，宾非变，谓变
 					// 可能有一条或多条

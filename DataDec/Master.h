@@ -16,6 +16,8 @@
 #include "URITable.h"
 #include "SPARQLLexer.h"
 #include "SPARQLParser.h"
+#include "SlaveSPARQLLexer.h"
+#include "SlaveSPARQLParser.h"
 
 #include <string.h>
 #include <pthread.h>

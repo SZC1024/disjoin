@@ -2161,7 +2161,6 @@ bool TwoConstantStatisticsBuffer::find(unsigned value1, unsigned value2) {
 	//const Triple* l = pos, *r = posLimit;
 	int left = 0, right = posLimit - pos;
 	int middle;
-	
 	while (left != right) {
 		middle = left + ((right - left) / 2);
 		if (::greater(value1, value2, pos[middle].value1, pos[middle].value2)) {
@@ -2227,7 +2226,8 @@ int TwoConstantStatisticsBuffer::findPredicate(unsigned value1, Triple *pos, Tri
 
 Status TwoConstantStatisticsBuffer::getStatis(unsigned &v1, unsigned v2) {
 	pos = index, posLimit = index + indexPos;
-	find(v1, v2);
+	if (!find(v1, v2))
+		return NOT_FOUND;
 	if (::greater(pos->value1, pos->value2, v1, v2))
 		pos--;
 	
@@ -2239,7 +2239,8 @@ Status TwoConstantStatisticsBuffer::getStatis(unsigned &v1, unsigned v2) {
 	
 	const unsigned char *begin = (uchar *) buffer->getBuffer() + start, *limit = (uchar *) buffer->getBuffer() + end;
 	decode(begin, limit);
-	find(v1, v2);
+	if (!find(v1, v2))
+		return NOT_FOUND;
 	if (pos->value1 == v1 && pos->value2 == v2) {
 		v1 = pos->count;
 		return OK;
