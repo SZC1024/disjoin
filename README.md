@@ -1,5 +1,4 @@
-# disjoin-Master
- disjoin完整版
+disjoin完整版
 
 Slave文件夹放在slave节点的triplebit根目录中，更改triplebit的makefile，使其和triplebit一起编译
 
