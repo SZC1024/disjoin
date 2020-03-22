@@ -214,6 +214,76 @@ bool generalQuery:: createParition(){
     return true;
 }
 
+//对join图递归地搜非相邻边
+void dfsThePointToEdgeAndType(map<size_t,map<size_t,int> >& pointToEdgeAndType,map<size_t,size_t>& adjacentEdgeSet,int deep=0){
+    static int maxdeep = 0;
+    int cancontinuesearch = 0;
+    //基本情况也包含在下边的判断中（最小适应到两个顶点的基本图）
+    for (map<size_t, map<size_t, int> >::iterator point = pointToEdgeAndType.begin(); point != pointToEdgeAndType.end();point++) {
+        for (map<size_t, int>::iterator edge = point->second.begin(); edge != point->second.end();edge++) {
+            int flag = 0;
+            if(edge->second == 0){
+                //该边没有被选中过
+                //接下来判断该边的所有邻边有没有被选中过
+                for (map<size_t, int>::iterator i = point->second.begin(); i != point->second.end();i++) {
+                    if(i->first != edge->first){//屏蔽掉自身
+                        if (i->second == 1) flag = 1;//但凡有一个是使用过的，flag置为1
+                    }
+                }
+                for(map<size_t,int>::iterator j=pointToEdgeAndType[edge->first].begin();j!=pointToEdgeAndType[edge->first].end();j++){
+                    if(j->first != point->first){//同样屏蔽掉自身，因为是无向图
+                        if (j->second == 1) flag = 1;//同上
+                    }
+                }
+            }
+            if(flag == 0){
+                //说明该边的所有邻边也都没有被选中过
+                //接下来选中该边并递归
+                edge->second = 1;//因为是无向图，等价于pointToEdgeAndType[point->first][edge->first] = 1;
+                pointToEdgeAndType[edge->first][point->first] = 1;
+                cancontinuesearch = 1;
+				dfsThePointToEdgeAndType(pointToEdgeAndType, adjacentEdgeSet, deep + 1);
+				edge->second = 0;
+                pointToEdgeAndType[edge->first][point->first] = 0;
+            }
+        }
+    }
+    if(cancontinuesearch==0){
+        //说明本次递归一个可选择的边都没有，达到了一个dfs分支的末端
+        if (deep > maxdeep){//deep也就代表了adjacentEdgeSet里边元素的数量
+            //记录该dfs路径，作为当前寻找到的最多非相邻边组合
+            adjacentEdgeSet.clear();
+            for (map<size_t, map<size_t, int> >::iterator point = pointToEdgeAndType.begin(); point != pointToEdgeAndType.end();point++) {
+                for (map<size_t, int>::iterator edge = point->second.begin(); edge != point->second.end();edge++) {
+                    if(edge->second == 1){
+                        if((adjacentEdgeSet.find(point->first) == adjacentEdgeSet.end())&&(adjacentEdgeSet.find(edge->first) == adjacentEdgeSet.end())){
+                            //因为是无向图，所以当边的两顶点都不包含在adjacentEdgeSet的key时才插入
+                            adjacentEdgeSet[point->first] = edge->first;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+}
+
+//从join图中搜索最多的非相邻边集合并返回其中一个组合
+map<size_t,size_t>* searchMostAdjacentEdge(map<size_t,set<size_t>* >& pointToEdge){
+    //为了模块化，需要根据pointToEdge建立一个搜索专用的join图
+    map<size_t, map<size_t, int> > pointToEdgeAndType;//第一个参数和pointToEdge一样，第二个参数map的第一个参数是入边点的id，第二个表示该边有没有被选中过，没有为0，有为1
+    for (map<size_t, set<size_t>* >::iterator point = pointToEdge.begin(); point != pointToEdge.end();point++) {
+        for (set<size_t>::iterator edge = point->second->begin(); edge != point->second->end();edge++) {
+            pointToEdgeAndType[point->first][*edge] = 0;
+        }
+    }
+    //进一个递归函数，对pointToEdgeAndType进行dfs，并得到最多非相邻边集
+    map<size_t, size_t>* adjacentEdgeSet = new map<size_t, size_t>();
+    dfsThePointToEdgeAndType(pointToEdgeAndType,*adjacentEdgeSet);
+    return adjacentEdgeSet;
+}
+
+
  //创建查询计划
 bool generalQuery::createPlan(){
     
@@ -288,14 +358,86 @@ bool generalQuery::createPlan(){
             }
         }
     }
-    //union结束，开始join，原理同上
+    
 
-if(_debug_for_szc_== 1){
-    for(map<size_t,subQuery*>::iterator i=idtosubq.begin();i!=idtosubq.end();i++){
-        cout<<"join之前idtosubq中id="<<i->first<<"\ttype="<<i->second->getType()<<endl;
+if (_debug_for_szc_ == 1) {
+		for (map<size_t, subQuery*>::iterator i = idtosubq.begin(); i != idtosubq.end(); i++) {
+			cout << "join之前idtosubq中id=" << i->first << "\ttype=" << i->second->getType() << endl;
+		}
+	}
+    
+    //首先建立可join图
+    map<size_t, set<size_t>* > pointToEdge;//join图，第一个参数是图中节点id，第二个参数是该节点出边的edge集合，参数为进入顶点的id
+    for (map<size_t, subQuery*>::iterator i = idtosubq.begin(); i != idtosubq.end();i++) {
+        if(flag[i->first]==0){
+            //此时说明i为可使用的节点
+            pointToEdge[i->first] = new set<size_t>();
+        }
     }
-}
+    //建点完成，接下来建边
+    for (map<size_t, set<size_t>* >::iterator i = pointToEdge.begin(); i != pointToEdge.end();i++) {
+        map<size_t, set<size_t>* >::iterator j = i;
+        j++;
+        for (; j != pointToEdge.end();j++) {
+            vector<string> temp;
+            if(idtosubq[i->first]->findCommonValName(*idtosubq[j->first],temp)){
+                //说明i和j可以进行join，于是建边
+                i->second->insert(j->first);
+                j->second->insert(i->first);
+            }
+        }
+    }
+    //建边结束，此时pointToEdge中存的就是完整的子查询连接图（可join图）
+    //接下来就是循环调用searchMostAdjacentEdge函数搜出当前join图中的最多非相邻边并合并
+    while(pointToEdge.size() > 1){
+        map<size_t, size_t>* adjacentEdgeSet = searchMostAdjacentEdge(pointToEdge);
+        for (map<size_t, size_t>::iterator pair = adjacentEdgeSet->begin(); pair != adjacentEdgeSet->end();pair++) {
+            //对每个点对进行处理，分别在tree中join和join图中合并点
+            idtosubq[MaxSubID] = idtosubq[pair->first]->Join(*idtosubq[pair->second], MaxSubID);
+            tree[MaxSubID] = 0;
+            tree[pair->first] = MaxSubID;
+            tree[pair->second] = MaxSubID;
+            flag[MaxSubID] = 0;
+            flag[pair->first] = 2;
+            flag[pair->second] = 2;
+            //MaxSubID++;
+            //接下来对join图进行处理
+            pointToEdge[MaxSubID] = new set<size_t>();
+            for (set<size_t>::iterator point = pointToEdge[pair->first]->begin(); point != pointToEdge[pair->first]->end(); point++) {
+                if(*point != pair->second){//不包含pair中的另一个点
+                    pointToEdge[MaxSubID]->insert(*point);
+                    pointToEdge[*point]->insert(MaxSubID);
+                }
+            }
+            for (set<size_t>::iterator point = pointToEdge[pair->second]->begin(); point != pointToEdge[pair->second]->end();point++) {
+                if(*point != pair->first){//同上，不包含pair中的另一个点
+                    pointToEdge[MaxSubID]->insert(*point);
+                    pointToEdge[*point]->insert(MaxSubID);
+                }
+            }
+            //加点和边完成，接下来需要将pair中的两个点和所有关联边删掉
+            for (set<size_t>::iterator point = pointToEdge[pair->first]->begin(); point != pointToEdge[pair->first]->end();point++) {
+                if(*point != pair->second){
+                    pointToEdge[*point]->erase(pair->first);
+                }
+            }
+			for (set<size_t>::iterator point = pointToEdge[pair->second]->begin(); point != pointToEdge[pair->second]->end(); point++) {
+				if (*point != pair->first) {
+					pointToEdge[*point]->erase(pair->second);
+				}
+			}
+            pointToEdge[pair->first]->clear();
+            pointToEdge[pair->second]->clear();
+            pointToEdge.erase(pair->first);
+            pointToEdge.erase(pair->second);
+            //对join图合并两个节点完成
+            MaxSubID++;
+        }
+    }
+    //运行完成后join图只剩一个节点，并且这个节点就是总连接计划树的root，并且已经添加进tree中
 
+/*老式join
+    //union结束，开始join，原理同上
     for(map<size_t,subQuery*>::iterator i=idtosubq.begin();i!=idtosubq.end();i++){
 
     if(_debug_for_szc_==1) cout<<"循环2外层循环i:"<<i->first<<endl;
@@ -327,9 +469,11 @@ if(_debug_for_szc_== 1){
             }
         }
     }
+*/
+
     //join结束之后只剩最大id的flag的value对应的是0
     //接下来该利用tree生成查询计划树
-    if(_debug_for_szc_==1){
+if(_debug_for_szc_==1){
         cout<<"下面打印出最终的tree，flag，idtosubq结构"<<endl;
         for(auto i:tree){
             cout<<"tree:"<<i.first<<"\t"<<i.second<<endl;
@@ -347,14 +491,15 @@ if(_debug_for_szc_==1) cout<<"开始创建PlanTree"<<endl;
     PlanTree* generalPlanTree = new PlanTree(&tree, idtosubq);
 if(_debug_for_szc_==1) cout<<"创建PlanTree结束"<<endl;
 
-    vector<PlanTree*>* planTreeForEachPartition = nullptr;
+
 if(_debug_for_szc_==1) cout<<"开始进入分解计划"<<endl;
 
-    decomposePlan(generalPlanTree, planTreeForEachPartition, partSub.size());
+    decomposePlan(generalPlanTree, partSub.size());
 if(_debug_for_szc_==1) cout<<"分解查询计划结束，并将各partition的执行计划已下发"<<endl;
     
     return true;
 }
+
 
 void printTree(TreeNode* node){
     if(node!=nullptr){
@@ -366,8 +511,8 @@ void printTree(TreeNode* node){
     }
 }
 
-//分解查询计划，直接将查询计划复制到分区的子查询计划中
-bool generalQuery::decomposePlan(PlanTree* generalPlanTree,vector<PlanTree*>* planTreeForEachPartition,size_t num){
+//分解查询计划，直接将查询计划复制到分区的子查询计划中（被createPlan在结尾调用了）
+bool generalQuery::decomposePlan(PlanTree* generalPlanTree,size_t num){
 
 if(_debug_for_szc_==1) cout<<"进入分解计划"<<endl;
     
@@ -376,7 +521,7 @@ if(_debug_for_szc_==1) cout<<"进入分解计划"<<endl;
 if(_debug_for_szc_==1) cout<<"↖分解之前plantree↗"<<endl;
 if(_debug_for_szc_==1) cout<<"开始正式分解"<<endl;
 
-    planTreeForEachPartition = generalPlanTree->decomposePlanTree(num);
+    vector<PlanTree*>* planTreeForEachPartition = generalPlanTree->decomposePlanTree(num);
 
 if(_debug_for_szc_==1) cout<<"分解正式结束"<<endl;
 if(_debug_for_szc_==1) cout<<"打印出所有分解结果"<<endl;
@@ -431,8 +576,12 @@ if(_debug_for_szc_==1){
         partitionPlan->push_back(eachstructPlanVector);
     }
 
-if(_debug_for_szc_==1) cout<<"PlanTree转换vector结束，开始将vector下发给各partition"<<endl;
+    if(_debug_for_szc_==1) cout<<"PlanTree转换vector结束，开始将vector下发给各partition"<<endl;
     
+
+    //在这里做查询计划的下发☆★
+
+
     //暂时只将总查询计划下发
     size_t selected = 3;
     partSub[selected]->alterSubPlan(*(partitionPlan->at(0)));//这里的alterSubPlan的实现用了swap函数，所以导致我在后边查partitionPlan查不出东西

@@ -7,6 +7,8 @@
 #include<map>
 #include<deque>
 #include<vector>
+#include<list>
+#include "subQuery.hpp"
 using namespace std;
 
 struct TreeNode{
@@ -14,11 +16,12 @@ struct TreeNode{
     TreeNode* parent;
     TreeNode* left;
     TreeNode* right;
-    int type;//表示是join得来的还是union的来的，0：原始子查询，1：union，2：join，-1：表示为了生成完全二叉树而填充的虚结点
+    int type;//表示是join得来的还是union得来的，0：原始子查询，1：union，2：join，-1：表示为了生成完全二叉树而填充的虚结点
     int weight;
     TreeNode() {
         left = NULL;
         right = NULL;
+        parent = NULL;
     }
 };
 
@@ -28,8 +31,9 @@ private:
     /* data */
 public:
     TreeNode* root;
+    map<size_t, subQuery*> idtosubq;
     vector<TreeNode*> emptyNode; //空结点池，用来任务结束时delete所有空结点
-    map<size_t, TreeNode*> idtonode;//总连接计划树
+    map<size_t, TreeNode*> idtonode;//连接计划树实节点
     PlanTree();
 
     //根据给定参数map生成计划树，map tree里第一个参数是结点的id，第二个参数是该节点的父节点id，root的父节点为0
@@ -47,10 +51,17 @@ public:
     //将当前计划树分解为指定（planTreeNum）个数
     vector<PlanTree*>* decomposePlanTree(int planTreeNum);
 
+    //在当前的PlanTree的基础上，将以node为根的子树复制一份作为PlanTree返回
+    PlanTree* copyChildPlanTree(TreeNode* node);
+
     ~PlanTree(){
         for (int i = 0; i < emptyNode.size();i++) {
             delete emptyNode[i];
         }
+        for (int i = 0; i < idtonode.size();i++) {
+            delete idtonode[i];
+        }
+        idtosubq.clear();
     }
 };
 #endif /* planTree_hpp */

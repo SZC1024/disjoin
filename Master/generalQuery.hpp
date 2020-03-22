@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <fstream>
 #include<unordered_set>
+#include <set>
 // #include "../gan/Master.h"
 #define PORT 10008
 using namespace std;
@@ -41,7 +42,7 @@ public:
     bool decomposeQueryAll();  //查询语句的分解
     bool createParition();   //创建paritition
     bool createPlan();     //创建查询计划
-    bool decomposePlan(PlanTree* generalPlanTree,vector<PlanTree*>* planTreeForEachPartition, size_t num);   //分解查询计划
+    bool decomposePlan(PlanTree* generalPlanTree, size_t num);   //分解查询计划（被createPlan在结尾调用了）
     bool sendPlan();        //发送查询计划
     bool createGlobalRef();   //创建全局映射
     bool sendGlobalRef();    //发送全局映射
