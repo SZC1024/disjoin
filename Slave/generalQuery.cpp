@@ -29,7 +29,7 @@ generalQuery::generalQuery(size_t id, unordered_map<size_t, string> sub, unorder
     size_t id1;
     size_t id2;
     string str;
-    ifstream in("./searchAPI/host");
+    ifstream in("./host");
     if(! in){
         cout<<"读取ip映射失败"<<endl;
         exit(0);

@@ -24,7 +24,7 @@ class PlanTree;
 class generalQuery{
 private:
     size_t ID;    //查询ID
-    unordered_map<size_t, partitionToSub* > partSub; //分区映射
+    unordered_map<size_t, partitionToSub* > partSub; //分区映射（从1开始，+1递增）
     unordered_map<size_t, size_t> globalIDRef; //全局ID映射表,前者代表ID，后者代表节点
     vector<structPlan> plan;   //查询计划树，根节点编号0
     string queryStr;      //查询语句

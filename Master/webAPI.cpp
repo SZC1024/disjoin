@@ -124,7 +124,7 @@ void closeDb(){
 //开始一个节点
 void* startSlave(void* ip){
     string str((char*) ip);
-    string Dir = "/opt/Grace/bin/lrelease/startSlave";  //执行文件目录
+    string Dir = "/root/grace-slave/bin/lrelease/startslave";  //执行文件目录
     string cmdString = "ssh ";
     cmdString += str;
     cmdString += " ";

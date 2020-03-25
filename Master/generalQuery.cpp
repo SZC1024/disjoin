@@ -1,6 +1,6 @@
 #include "generalQuery.hpp"
 
-const int _debug_for_szc_ = 0 ;
+const int _debug_for_szc_ = 1 ;
 
 generalQuery::generalQuery(){
     
@@ -580,21 +580,33 @@ if(_debug_for_szc_==1){
     
 
     //在这里做查询计划的下发☆★
-
-
-    //暂时只将总查询计划下发
-    size_t selected = 3;
-    partSub[selected]->alterSubPlan(*(partitionPlan->at(0)));//这里的alterSubPlan的实现用了swap函数，所以导致我在后边查partitionPlan查不出东西
     for (unordered_map<size_t, partitionToSub*>::iterator iter = partSub.begin(); iter != partSub.end();iter++) {
-        if (iter->first!=selected) {
-            vector<structPlan> temp;
-            structPlan a;
-            a.ID = 0;
-            a.type = 0;
-            temp.push_back(a);
-            partSub[iter->first]->alterSubPlan(temp);
+        partSub[iter->first]->alterSubPlan(*(partitionPlan)->at(iter->first - 1));
+    }
+    for(unordered_map<size_t, partitionToSub*>::iterator iter = partSub.begin(); iter != partSub.end(); iter++){
+        if(iter->second->getSubPlanSize() == 0){
+			vector<structPlan> temp;
+			structPlan a;
+			a.ID = 0;
+			a.type = 0;
+			temp.push_back(a);
+			partSub[iter->first]->alterSubPlan(temp);
         }
     }
+
+    ////暂时只将总查询计划下发
+    //size_t selected = 3;
+    //partSub[selected]->alterSubPlan(*(partitionPlan->at(0)));//这里的alterSubPlan的实现用了swap函数，所以导致我在后边查partitionPlan查不出东西
+    //for (unordered_map<size_t, partitionToSub*>::iterator iter = partSub.begin(); iter != partSub.end();iter++) {
+    //    if (iter->first!=selected) {
+    //        vector<structPlan> temp;
+    //        structPlan a;
+    //        a.ID = 0;
+    //        a.type = 0;
+    //        temp.push_back(a);
+    //        partSub[iter->first]->alterSubPlan(temp);
+    //    }
+    //}
 
 if(_debug_for_szc_==1) cout<<"任务下发结束，本模块结束"<<endl;
 
