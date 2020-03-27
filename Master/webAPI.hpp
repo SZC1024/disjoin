@@ -18,7 +18,7 @@
 #include <string.h>
 #include <algorithm>
 #include <fstream>
-//#include "./gan/Master.h"
+#include "Master.h"
 using namespace std;
 #define PORT 10008  //slave服务器端口
 extern manageToMaster* manage;

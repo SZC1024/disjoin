@@ -238,9 +238,9 @@ bool manageToSlave::getAndSendData_To_Master(){
                 if(str == "create"){
                     //加载数据库
                     cout<<"创建数据库"<<endl;
-                   // if(create("./mydatabase/")){
-                     //  serverToMaster->mySend(*it, (void *)"Create OK", 10);
-                   // }
+					if (create("./mydatabase/")) {
+						serverToMaster->mySend(*it, (void*)"Create OK", 10);
+					}
                 }
                 else if(str == "sentense"){
                     //发送查询语句

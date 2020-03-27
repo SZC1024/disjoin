@@ -483,22 +483,22 @@ int createDatabase(string &dataFile, vector <string> &slaveName, string &last, s
 	
 	// Created by peng on 2019-12-23, 15:38:07
 	// 加载table和索引，并测试查询语句转换，释放table和索引
-	loadTableAndStatistic(targetDir);
-	
-	for (unsigned i = 1; i <= 8; ++i) {
-		ifstream ifs("queryLUBM" + std::to_string(i));
-		//ifstream ifs("queryLUBM1");
-		string line;
-		string queryStr = "";
-		while (getline(ifs, line)) {
-			queryStr += line + '\n';
-		}
-		string transQuery = transformQuery(queryStr);
-		cout << "transQuery: " << transQuery << endl;
-		cout << "getResultSize: " << getResultSize(transQuery, 0) << endl;
-	}
-	
-	releaseTableAndStatistic();
+	//loadTableAndStatistic(targetDir);
+	//
+	//for (unsigned i = 1; i <= 8; ++i) {
+	//	ifstream ifs("queryLUBM" + std::to_string(i));
+	//	//ifstream ifs("queryLUBM1");
+	//	string line;
+	//	string queryStr = "";
+	//	while (getline(ifs, line)) {
+	//		queryStr += line + '\n';
+	//	}
+	//	string transQuery = transformQuery(queryStr);
+	//	cout << "transQuery: " << transQuery << endl;
+	//	cout << "getResultSize: " << getResultSize(transQuery, 0) << endl;
+	//}
+	//
+	//releaseTableAndStatistic();
 	
 	//分解数据文件
 	//subDataFile = dataDecompose(dataFile, last);

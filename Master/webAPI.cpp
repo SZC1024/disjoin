@@ -77,13 +77,13 @@ bool create(){
             cl->mySend((void*)"create", 7);
         // char temp[1024];
         //memset(temp, 0, 1024);
-        // cl->myRec(temp);
+         //cl->myRec(temp);
         // string str(temp);
         // cout<<slaveName.at(i)<<" "<<str<<endl;
         cl->myclose();
     }
     cout << "load table and statistic" << endl;
-    //loadTableAndStatistic("./subData");
+    loadTableAndStatistic("./subData");
     return true;
 }
 

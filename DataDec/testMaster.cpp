@@ -69,7 +69,7 @@ int main(int argc, char **argv) {
 		cin >> dataFile;
 		cout << "请输入数据文件格式，如txt，区分大小写，若无后缀输入空格" << endl;
 		cin >> last;
-		createDatabase(dataFile, slaveName, last, "/home/cjgao/disGrace/subData");
+		createDatabase(dataFile, slaveName, last, "./subData");
 		// Created by peng on 2019-12-18, 15:34:19
 		// load uri and predicate table; load statistic info.
 		//loadTableAndStatistic("subData");

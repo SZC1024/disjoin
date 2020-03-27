@@ -1,2 +1,5 @@
 .vscode/
 .vs/
+subData/*
+bin/lrelease/*
+DataDec/bin/lrelease/*

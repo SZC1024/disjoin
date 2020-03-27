@@ -25,7 +25,7 @@
 # include <pthread.h>
 #include <unistd.h>
 #include <fstream>
-//#include "../TripleBit/tripleBitQueryAPI.h"
+#include "../TripleBit/tripleBitQueryAPI.h"
 using namespace std;
 
 //slave节点之间服务端默认端口是10001

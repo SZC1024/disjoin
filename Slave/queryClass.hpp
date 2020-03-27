@@ -20,7 +20,7 @@
 #include<string.h>
 #include "common.h"
 #include<unordered_set>
-//#include "../TripleBit/tripleBitQueryAPI.h"
+#include "../TripleBit/tripleBitQueryAPI.h"
 using namespace std;
 
 #define MAX_VAL_NUM 1024

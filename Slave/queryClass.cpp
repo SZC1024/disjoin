@@ -103,10 +103,10 @@ queryClass::queryClass(vector<string> queryVec, vector<string> nameVec, size_t i
          
     //执行查询语句得到结果
     for(size_t i = 0; i < queryVecNum; i ++){
-        vector<size_t> result;
+        vector<unsigned int> result;
         
         //此处调用查询语句API得到结果
-        //result = search(queryStrVec.at(i).c_str());
+        result = search(queryStrVec.at(i).c_str());
         //输出结果调试
         cout<<"查询语句结果，ID:"<<ID<<endl;
        /* for(size_t i = 0; i < result.size(); i++){

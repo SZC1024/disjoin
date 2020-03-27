@@ -579,7 +579,7 @@ if(_debug_for_szc_==1){
     if(_debug_for_szc_==1) cout<<"PlanTree转换vector结束，开始将vector下发给各partition"<<endl;
     
 
-    //在这里做查询计划的下发☆★
+    //在这里做查询计划的下发（这里有问题）
     for (unordered_map<size_t, partitionToSub*>::iterator iter = partSub.begin(); iter != partSub.end();iter++) {
         partSub[iter->first]->alterSubPlan(*(partitionPlan)->at(iter->first - 1));
     }
@@ -594,7 +594,7 @@ if(_debug_for_szc_==1){
         }
     }
 
-    ////暂时只将总查询计划下发
+    //暂时只将总查询计划下发
     //size_t selected = 3;
     //partSub[selected]->alterSubPlan(*(partitionPlan->at(0)));//这里的alterSubPlan的实现用了swap函数，所以导致我在后边查partitionPlan查不出东西
     //for (unordered_map<size_t, partitionToSub*>::iterator iter = partSub.begin(); iter != partSub.end();iter++) {
