@@ -29,13 +29,12 @@ bool  partitionToSub::alterSubPlan(vector<structPlan> temp){
 
 //加子查询
 bool partitionToSub::addSubref(size_t id, subQuery *sub){
-    
-    if(subRef.find(id) != subRef.end()){
+
+    if(subRef.find(id) == subRef.end()){
         subRef[id] = sub;
         return true;
-    }
-    else{
-        cout<<"该子查询已经存在"<<endl;
+    }else{
+        cout << "分区" << this->ID << "的子查询" << id << "已经存在" << endl;
     }
     return false;
 }

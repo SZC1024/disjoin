@@ -68,7 +68,7 @@ queryClass::queryClass(const queryClass& query){
 }
  
 
-//以查询语句创建queryclass
+//以查询语句创建queryclass并执行原始子查询
 queryClass::queryClass(vector<string> queryVec, vector<string> nameVec, size_t id){
     
     size_t queryVecNum = queryVec.size();
@@ -232,6 +232,7 @@ size_t queryClass::getpParentRight() const{
 /*
  查找两个查询类的相同变量
  A， B数组代表变量在valNameVec的位置
+ 因为这个函数被调用得到的返回值只用来当作bool使用了，所以暂时将此函数判断依据同步为master端的判断依据
 */
 size_t queryClass::findCommonValName(queryClass query, vector<size_t> &A, vector<size_t> &B, vector<string> &C) {
     
@@ -243,8 +244,7 @@ size_t queryClass::findCommonValName(queryClass query, vector<size_t> &A, vector
     if(ID < id){
         flag = 0;
         C.insert(C.begin(), valNameVec.begin(), valNameVec.end());
-    }
-    else{
+    }else{
         flag = 1;
         C.insert(C.begin(), name1.begin(), name1.end());
     }
@@ -262,7 +262,16 @@ size_t queryClass::findCommonValName(queryClass query, vector<size_t> &A, vector
             }
         }
     }
-
+    cout << "valNameVec:";
+    for (auto a:valNameVec) {
+        cout << " " << a;
+    }
+    cout << endl;
+    cout << "name1:";
+    for(auto a:name1){
+        cout << " " << a;
+    }
+    cout << endl;
     //得到合并以后的新name数组，ID小的在前
     /*
      例如Id1: A B；id2: B C
@@ -273,7 +282,7 @@ size_t queryClass::findCommonValName(queryClass query, vector<size_t> &A, vector
             vector<string>::iterator it = find(valNameVec.begin(), valNameVec.end(), name1.at(i));
             if(it == valNameVec.end()){
                 C.push_back(name1.at(i));
-            }
+			}
         }
     }
     else{
@@ -283,7 +292,7 @@ size_t queryClass::findCommonValName(queryClass query, vector<size_t> &A, vector
                  C.push_back(valNameVec.at(i));
              }
          }
-     }
+    }
     return k;
 }
 
@@ -357,17 +366,27 @@ queryClass* queryClass::Union(queryClass query, size_t id){
 */
 //比较函数
 bool compare(VectorCompare A, VectorCompare B){
-    vector<size_t> sen = A.name;
-    for(size_t i = 0; i < sen.size(); i ++){
-        size_t index = sen.at(i);
-        if(A.val.at(index) > B.val.at(index)){
-            return true;
-        }
-        else if(A.val.at(index) < B.val.at(index)){
-            return false;
-        }
+    vector<size_t> aname = A.name;
+    vector<size_t> bname = B.name;
+
+    vector<size_t>::iterator aiter = aname.begin();
+    vector<size_t>::iterator biter = bname.begin();
+    for (; !((aiter == aname.end()) || (biter == bname.end())); aiter++, biter++) {
+        if (A.val.at(*aiter) > B.val.at(*biter)) return true;
+        else if (A.val.at(*aiter) < B.val.at(*biter)) return false;
     }
     return true;
+    //老的，只能判断同种类型的VectorCompare，当不同类型的VectorCompare时，比如一个两列一个三列就会出现越界
+    //for(size_t i = 0; i < aname.size(); i ++){
+    //    size_t index = aname.at(i);
+    //    if(A.val.at(index) > B.val.at(index)){
+    //        return true;
+    //    }
+    //    else if(A.val.at(index) < B.val.at(index)){
+    //        return false;
+    //    }
+    //}
+    //return true;
 }
 
 //Join
@@ -396,27 +415,27 @@ queryClass* queryClass::Join(queryClass query, size_t id){
     }
     delete errorRe;
     
-        //实现join
-        //先排序
-        //第一个查询类排序,this
-       VectorCompare temp_1;
-       temp_1.name = A;
-       vector<VectorCompare> vec1(valueVec.size(), temp_1);
-       for(size_t m = 0; m < valueVec.size(); m ++){
-           vec1.at(m).val = valueVec.at(m);
-       }
-       sort(vec1.begin(), vec1.end(), compare);
+    //实现join
+    //先排序
+    //第一个查询类排序,this
+    VectorCompare temp_1;
+    temp_1.name = A;
+    vector<VectorCompare> vec1(valueVec.size(), temp_1);
+    for(size_t m = 0; m < valueVec.size(); m ++){
+        vec1.at(m).val = valueVec.at(m);
+    }
+    sort(vec1.begin(), vec1.end(), compare);
        
-       //第二个查询类排序,query
-       VectorCompare temp_2;
-       temp_2.name = B;
-       vector<VectorCompare>vec2(val.size(), temp_2);
-       for(size_t n = 0; n < val.size(); n++){
-           vec2.at(n).val = val.at(n);
-       }
-       sort(vec2.begin(), vec2.end(), compare);
-       
-       //Join
+    //第二个查询类排序,query
+    VectorCompare temp_2;
+    temp_2.name = B;
+    vector<VectorCompare> vec2(val.size(), temp_2);
+    for(size_t n = 0; n < val.size(); n++){
+        vec2.at(n).val = val.at(n);
+    }
+    sort(vec2.begin(), vec2.end(), compare);
+
+    //Join
     if(ID < query.getID()){  //this的名字在前
         size_t k = 0;
         size_t l = 0;
@@ -491,8 +510,7 @@ queryClass* queryClass::Join(queryClass query, size_t id){
             }
         }
     }
-    //赋值结果名
-    nameRe.swap(name);
+
     
     queryClass* re = new queryClass(queryStrRe, nameRe, valRe, id, ID, query.getID(), 2);
     return re;

@@ -15,7 +15,7 @@
 #include <fstream>
 #include<unordered_set>
 #include <set>
-// #include "../gan/Master.h"
+#include "Master.h"
 #define PORT 10008
 using namespace std;
 
@@ -26,7 +26,7 @@ private:
     size_t ID;    //查询ID
     unordered_map<size_t, partitionToSub* > partSub; //分区映射（从1开始，+1递增）
     unordered_map<size_t, size_t> globalIDRef; //全局ID映射表,前者代表ID，后者代表节点
-    vector<structPlan> plan;   //查询计划树，根节点编号0
+    vector<structPlan> plan;   //查询计划树，根节点编号0（暂时没有被用到过）
     string queryStr;      //查询语句
     vector<string> subStr; //子查询语句
     vector<vector<string>> subStrValName; //子查询语句变量名，和substr一一对应
@@ -35,6 +35,7 @@ private:
     vector<vector<size_t> > result;
     size_t MaxSubID;
     vector<string> finalResultName;   //最终的结果名
+    map<size_t, subQuery*> idtosubq;  //第一个参数为ID，所有子查询id映射
     
 public:
     generalQuery();
@@ -53,6 +54,8 @@ public:
     //将查询语句分解成子查询数组，赋值查询变量名数组
     bool queryComposeToVec(const char* querySen);
     bool waitResult();
+    bool orderSlaveExecuteSubQuery();//命令slave节点开始执行子查询
+    bool orderSlaveExecutePlan();//命令slave节点开始执行查询计划
     vector<vector<size_t> > getResult() const;
     
 };

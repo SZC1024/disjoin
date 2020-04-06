@@ -1,5 +1,7 @@
 #include "planTree.hpp"
 
+const int _debug_for_szc_ = 1;
+
 PlanTree::PlanTree(){
     root=NULL;
 }
@@ -28,7 +30,7 @@ PlanTree::PlanTree(map<size_t,size_t>* tree, map<size_t, subQuery*> idtosubq){
         }
     }
     //idtonode里存储了整个树
-    root = idtonode[tree->size()];//其实这句话可以不要，因为上边赋值过了
+    //root = idtonode[tree->size()];//其实这句话可以不要，因为上边赋值过了
 }
 
 //得到树根为t的树的深度
@@ -93,40 +95,31 @@ vector<TreeNode*>* PlanTree::completeBinaryTreeToVector(TreeNode* node) {
 }
 
 //decomposePlanTree调用，以dfs递归的方式搜索root为根的树中所有第一代父节点，传参必须保证root度为2
-void searchFirstGenerationParent(TreeNode* root,list<TreeNode*>& firstGenerationParent){
+void searchFirstGenerationParent(TreeNode* node,list<TreeNode*>& firstGenerationParent){
     //首先可以肯定的是PlanTree中没有度为1的节点
-    if(root->type != 2){
-        firstGenerationParent.push_back(root->parent);
+    if ((node->type == 2) && (node->left->type != 2 || node->right->type != 2)) {
+        firstGenerationParent.push_back(node);
     }else{
-        if(root->left->type == 2){
-            searchFirstGenerationParent(root->left, firstGenerationParent);
-        }
-        if(root->right->type == 2){
-            searchFirstGenerationParent(root->right, firstGenerationParent);
-        }
+        if (node->left->type == 2) searchFirstGenerationParent(node->left, firstGenerationParent);
+        if (node->right->type == 2) searchFirstGenerationParent(node->right, firstGenerationParent);
     }
 }
 
 //将node所指的子树转换为tree map，tree中第一个参数为该节点id，第二个参数为该节点父亲id
 void getTreeMap(TreeNode* node, map<size_t, size_t>* tree, int deep = 1) {
-	if (deep == 1) {
-		(*tree)[node->id] = 0;//根节点，tree中根节点parent为0，保证tree的结构和generalQuery的createPlan中tree一样，方便直接调用PlanTree构造函数
-	}
-	else {
-		(*tree)[node->id] = node->parent->id;
-	}
-	if (node->left != NULL) {
-		getTreeMap(node->left, tree, deep + 1);
-	}
-	if (node->right != NULL) {
-		getTreeMap(node->right, tree, deep + 1);
-	}
+	if (deep == 1) (*tree)[node->id] = 0;//根节点，tree中根节点parent为0，保证tree的结构和generalQuery的createPlan中tree一样，方便直接调用PlanTree构造函数
+	else (*tree)[node->id] = node->parent->id;
+	if (node->left != NULL) getTreeMap(node->left, tree, deep + 1);
+	if (node->right != NULL) getTreeMap(node->right, tree, deep + 1);
 }
 
 //将当前计划树（root指定为准）分解为指定（planTreeNum）个数
 vector<PlanTree*>* PlanTree::decomposePlanTree(int planTreeNum) {
     vector<PlanTree*>* smallTree = new vector<PlanTree*>();//用来存最终结果
-    //smallTree->push_back(this);//暂时不分解
+    
+ //   //不分解，调试专用代码段
+	//smallTree->push_back(this);//之后直接将原树存进smallTree中即可
+	//return smallTree;
 
     //先找出PlanTree中的第一代父节点，用链表存储
     list<TreeNode*> selectedParentNode;
@@ -136,7 +129,17 @@ vector<PlanTree*>* PlanTree::decomposePlanTree(int planTreeNum) {
     }else{
         searchFirstGenerationParent(root, selectedParentNode);
     }
+
+    if (_debug_for_szc_) {
+        cout << "当前join树的第一代父节点为:";
+        for(auto a:selectedParentNode){
+            cout << " " << a->id;
+        }
+        cout << endl;
+    }
+
     //接下来合并selectedParentNode中的节点
+    cout << "开始合并相邻节点" << endl;
     while(selectedParentNode.size() > planTreeNum){//首先逐个合并相邻的节点（其中一个为另一个父亲）
         int flag = 0;
         for (list<TreeNode*>::iterator i = selectedParentNode.begin(); i != selectedParentNode.end();i++) {
@@ -160,9 +163,11 @@ vector<PlanTree*>* PlanTree::decomposePlanTree(int planTreeNum) {
                     break;
                 }
             }
-            if(flag==1) break;
+            if (flag == 1) break;
         }
+        if (flag == 0) break;//搜了一圈发现flag还是0，说明没有没有相邻节点，直接退出循环
     }
+    cout << "开始合并具有共同父亲的节点" << endl;
     while(selectedParentNode.size() > planTreeNum){//接下来逐个合并具有共同父亲的节点
         int flag = 0;
         for (list<TreeNode*>::iterator i = selectedParentNode.begin(); i != selectedParentNode.end();i++) {
@@ -177,9 +182,12 @@ vector<PlanTree*>* PlanTree::decomposePlanTree(int planTreeNum) {
                     break;
                 }
             }
+            if (flag == 1) break;
         }
+        //这里必然不会死循环，因为不存在没有共同节点的第一代父节点，直到合并的只剩下root
     }
     //划分完毕，接下来就是将每个划分都完整的表示成连接计划树
+    cout << "节点合并完毕，开始选择root的归属" << endl;
     //首先找到最矮树，需要将总连接计划树其余任务划分给它
     TreeNode* selectedRoot;
     int selectedRootDeep = 99999999;
@@ -190,11 +198,24 @@ vector<PlanTree*>* PlanTree::decomposePlanTree(int planTreeNum) {
             selectedRoot = *iter;
         }
     }
+    cout << "选择完毕，开始复制PlanTree副本" << endl;
     //接下来复制子树，除了最矮树
     for (list<TreeNode*>::iterator iter = selectedParentNode.begin(); iter != selectedParentNode.end();iter++) {
         if(*iter != selectedRoot){
             map<size_t, size_t>* tree = new map<size_t, size_t>();
             getTreeMap(*iter, tree);//根据iter所指treenode，填充tree map
+            if(_debug_for_szc_){
+				cout << "idtosubq:<id,subquery-type> =";
+				for (map<size_t, subQuery*>::iterator i = idtosubq.begin(); i != idtosubq.end(); i++) {
+					cout << " <" << i->first << "," << i->second->getType() << ">";
+				}
+				cout << endl;
+				cout << "tree:<id,parent-id> =";
+				for (map<size_t, size_t>::iterator i = tree->begin(); i != tree->end(); i++) {
+					cout << " <" << i->first << "," << i->second << ">";
+				}
+				cout << endl;
+            }
             PlanTree* plantree = new PlanTree(tree, idtosubq);//这里只是一个copy过程，不涉及更改原树结构
             smallTree->push_back(plantree);
         }
@@ -208,7 +229,6 @@ vector<PlanTree*>* PlanTree::decomposePlanTree(int planTreeNum) {
         }
     }
     smallTree->push_back(this);//之后直接将原树存进smallTree中即可
-
     return smallTree;
 }
 

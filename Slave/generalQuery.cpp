@@ -50,15 +50,15 @@ generalQuery::generalQuery(size_t id, unordered_map<size_t, string> sub, unorder
 }
 
 bool generalQuery::executeSubQuery(){
-         //构造value_type类型
-         for(auto it = subQueryStr.begin(); it != subQueryStr.end(); it++){
-             vector<string> queryStr;    //查询语句vec
-             vector<string> name = subQueryNamevec[(*it).first]; //得到namevec
-             queryStr.push_back((*it).second);
-             unordered_map<size_t, queryClass*>::value_type val((*it).first, new queryClass(queryStr, name, (*it).first));
-             ownedSubQuery.insert(val);
-         }
-         return true;
+    //构造value_type类型
+    for(auto it = subQueryStr.begin(); it != subQueryStr.end(); it++){
+        vector<string> queryStr;    //查询语句vec
+        vector<string> name = subQueryNamevec[(*it).first]; //得到namevec
+        queryStr.push_back((*it).second);
+        unordered_map<size_t, queryClass*>::value_type val((*it).first, new queryClass(queryStr, name, (*it).first));//执行
+        ownedSubQuery.insert(val);
+    }
+    return true;
 }
 
 //变更全局ID映射，返回-1表示失败，正确赋值表示成功
@@ -76,6 +76,12 @@ bool generalQuery::alterSubQueryID(unordered_map<size_t, size_t> umap){
     cout<<"清零后"<<endl;
     //交换
     globalSubQueryID.swap(umap);
+
+    cout << "全局映射表：<queryID,node> =";
+    for(auto a:globalSubQueryID){
+		cout << " <" << a.first << "," << a.second << ">";
+    }
+    cout << endl;
     return true;
 }
 
@@ -124,7 +130,7 @@ queryClass*  generalQuery::getSubQueryClass(size_t id){
         return it->second;
     }
     else{
-        cout<<"generalQuery::getSubQueryClass无法获取不存在的id映射。"<<endl;
+        cout<<"当前获取不到此id对应的子查询"<<endl;
         queryClass* errorRe = new queryClass();
         return errorRe;
     }
@@ -188,7 +194,7 @@ bool generalQuery::recycleEx(size_t index){
             
             auto it_client = unmap_cl.find(nodenum);
             if(it_client == unmap_cl.end()){
-                cout<<"客户端不存在："<<nodenum<<endl;
+                cout<<"节点的客户端映射不存在："<<nodenum<<endl;
                 exit(0);
             }
             client* cl = it_client->second;
@@ -212,17 +218,17 @@ bool generalQuery::recycleEx(size_t index){
             cl->myRec(&id_r);
             cl->myRec(&type_1);
             
-            //输出调试
-            cout<<"查询ID："<< quID <<endl;
-            cout<<"子查询ID: "<<subID<<endl;
-            cout<<"左查询ID："<<id_l<<endl;
-            cout<<"右查询ID："<<id_r<<endl;
-            cout<<"类型："<< type_1 <<endl;
+            ////输出调试
+            //cout<<"查询ID："<< quID <<endl;
+            //cout<<"子查询ID: "<<subID<<endl;
+            //cout<<"左查询ID："<<id_l<<endl;
+            //cout<<"右查询ID："<<id_r<<endl;
+            //cout<<"类型："<< type_1 <<endl;
             
             //接受查询语句
             size_t count_qu;
             cl->myRec(&count_qu);
-            cout<<"查询语句个数"<<endl;
+            cout<<"查询语句个数:"<<count_qu<<endl;
             for(size_t m = 0; m < count_qu; m++){
                 char A[2048];
                 memset(A, 0, 2048);
@@ -274,7 +280,7 @@ bool generalQuery::recycleEx(size_t index){
             if(it_node == globalSubQueryID.end()){
                 cout<<"该子查询不存在全局映射表"<<plan.at(index * 2 + 2).ID<<endl;
                 exit(0);
-            }
+            }//从slave的报错和master的全局映射表来看，似乎是没有将后来生成的子查询放入到全局映射表中
             size_t nodenum = it_node->second;
             
             size_t idV[2];
@@ -282,13 +288,20 @@ bool generalQuery::recycleEx(size_t index){
             idV[1] = plan.at(index * 2 + 2).ID;
  
             auto it_client = unmap_cl.find(nodenum);
+
+            //cout << "节点客户端列表: ";
+            //for(auto a:unmap_cl){
+            //    cout << a.first << " ";
+            //}
+            //cout << endl;
+
             if(it_client == unmap_cl.end()){
                 cout<<"节点的客户端映射不存在:"<<nodenum<<endl;
                 exit(0);
             }
             client* cl = it_client->second;
             
-            cout<<"没有的查询："<<idV[1]<<" "<<nodenum<<endl;
+            cout<<"没有的ID："<<idV[1]<<" "<<nodenum<<endl;
             
             //发送请求
             cl->mySend(idV, sizeof(idV));//发送格式ID ID，前者为查询类ID，后者为子查询ID
@@ -313,6 +326,7 @@ bool generalQuery::recycleEx(size_t index){
             //接受查询语句
             size_t count_qu;
             cl->myRec(&count_qu);
+            cout << "查询语句个数:" << count_qu << endl;
             for(size_t m = 0; m < count_qu; m++){
                 char A[2048];
                 memset(A, 0, 2048);
@@ -363,24 +377,56 @@ bool generalQuery::recycleEx(size_t index){
         if(plan.at(index).type == 1 && plan.at(index).ID != 0){
             ownedSubQuery[plan.at(index).ID] = ownedSubQuery[plan.at(index * 2 + 1).ID]-> Union(*(ownedSubQuery[plan.at(index * 2 + 2).ID]), plan.at(index).ID);
 
+			vector<string> A = ownedSubQuery[plan.at(index * 2 + 1).ID]->getValNameVec();
+			vector<string> B = ownedSubQuery[plan.at(index * 2 + 2).ID]->getValNameVec();
+			vector<string> C = ownedSubQuery[plan.at(index).ID]->getValNameVec();
+			cout << "union : < ";
+			for (auto a : A) {
+				cout << a << " ";
+			}
+			cout << ">  < ";
+			for (auto b : B) {
+				cout << b << " ";
+			}
+			cout << ">  --  < ";
+			for (auto c : C) {
+				cout << c << " ";
+			}
+			cout << ">" << endl;
+
             if(ownedSubQuery[plan.at(index).ID] != nullptr){
                 cout<<"生成："<<plan.at(index).ID<<"成功"<<endl;
             }
             else{
                 cout<<"生成："<<plan.at(index).ID<<"失败"<<endl;
             }
-        }
-        
-        //join操作
+        }//join操作
         else if(plan.at(index).type == 2 && plan.at(index).ID != 0){
             ownedSubQuery[plan.at(index).ID] = ownedSubQuery[plan.at(index * 2 + 1).ID]->Join(*(ownedSubQuery[plan.at(index * 2 + 2).ID]), plan.at(index).ID);
 
-	                if(ownedSubQuery[plan.at(index).ID] != nullptr){
-                        cout<<"生成："<<plan.at(index).ID<<"成功"<<endl;
-                    }
-                    else{
-                        cout<<"生成："<<plan.at(index).ID<<"失败"<<endl;
-                    }
+            vector<string> A = ownedSubQuery[plan.at(index * 2 + 1).ID]->getValNameVec();
+            vector<string> B = ownedSubQuery[plan.at(index * 2 + 2).ID]->getValNameVec();
+            vector<string> C = ownedSubQuery[plan.at(index).ID]->getValNameVec();
+            cout << "join : < ";
+            for(auto a:A){
+                cout << a << " ";
+            }
+            cout << ">  < ";
+            for(auto b:B){
+                cout << b << " ";
+            }
+            cout << ">  --  < ";
+            for(auto c:C){
+                cout << c << " ";
+            }
+            cout << ">" << endl;
+
+			if (ownedSubQuery[plan.at(index).ID] != nullptr) {
+				cout << "生成：" << plan.at(index).ID << "成功" << endl;
+			}
+			else {
+				cout << "生成：" << plan.at(index).ID << "失败" << endl;
+			}
         }
     }
     return true;

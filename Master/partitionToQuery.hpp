@@ -31,10 +31,12 @@ class partitionToSub{
 private:
     size_t ID;   //分区ID
     unordered_map<size_t, subQuery*> subRef;   //子查询映射
-    vector<string> subQueryVec;      //该分区的子查询语句
-    vector<struct structPlan> subPlan;   //子查询计划
+    vector<string> subQueryVec;      //该分区的子查询语句//经过观察，这个参数没有被用到过
+    //vector<struct structPlan> subPlan;   //子查询计划
     
 public:
+    vector<struct structPlan> subPlan;   //子查询计划
+
     partitionToSub(size_t id, unordered_map<size_t, string> unMap, unordered_map<size_t, size_t>unMapre, unordered_map<size_t, vector<string> > unMap_name);
     
     bool alterSubPlan(vector<structPlan> temp);  //赋值查询计划

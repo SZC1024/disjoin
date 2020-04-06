@@ -209,21 +209,19 @@ bool subQuery::findCommonValName(subQuery query, vector<string>& C){
     if(ID < id){
         flag = 0;
         C.insert(C.begin(), valNameVec.begin(), valNameVec.end());
-    }
-    else{
+    }else{
         flag = 1;
         C.insert(C.begin(), name1.begin(), name1.end());
     }
     //得到合并以后的新name数组，ID小的在前
-     //例如Id1: A B；id2: B C
+    //例如Id1: A B；id2: B C
     // 合并i以后就是A B C
     if(flag == 0){
         for(size_t i = 0; i < name1.size(); i++){
             vector<string>::iterator it = find(valNameVec.begin(), valNameVec.end(), name1.at(i));
             if(it == valNameVec.end()){
                 C.push_back(name1.at(i));
-            }
-            else{
+            }else{
                 flag1 = 1;
             }
         }
@@ -233,8 +231,7 @@ bool subQuery::findCommonValName(subQuery query, vector<string>& C){
              vector<string>::iterator it = find(name1.begin(), name1.end(), valNameVec.at(i));
              if(it == name1.end()){
                  C.push_back(valNameVec.at(i));
-             }
-             else{
+             }else{
                  flag1 = 1;
              }
          }
@@ -274,8 +271,6 @@ int subQuery::isCommon(subQuery query){
  目前只考虑a b c一一对齐
  a b c和 c b a这种不进行合并
 */
-
-
 subQuery* subQuery::Union(subQuery query, size_t id){
     
     vector<string> name = valNameVec;
@@ -306,34 +301,63 @@ subQuery* subQuery::Union(subQuery query, size_t id){
 */
 subQuery* subQuery::Join(subQuery query, size_t id){
  
-  //相同变量的列号
+    //相同变量的列号
     vector<int> A;
     vector<int> B;
-  //返回变量
+    //返回变量
     vector<string> queryStrRe;
     vector<string> nameRe;
     size_t countRe;
-  //query值获取
+    //query值获取
+    //size_t queryid = query.getID();
     vector<string> name = query.getValNameVec();
     vector<string> queryStr = query.getQueryVec();
     size_t count = query.getCount();
-    
- //异常返回
-   subQuery* errorRe = new subQuery();
-  //查找两个查询类的公共变量
+    vector<string> queryReNameVec;
+
+    //异常返回
+    subQuery* errorRe = new subQuery();
+    //查找两个查询类的公共变量
     if( !findCommonValName(query, nameRe)){
-        cout<<"两个变量无法join"<<endl;
+        cout<<"两个查询类无法join"<<endl;
         return errorRe;
     }
-  
     delete errorRe;
     //实现join策略
-    queryStrRe.swap(queryStr);
+  //  int flag;
+  //  if(ID < id){
+  //      flag = 0;
+  //      queryReNameVec.insert(queryReNameVec.begin(), valNameVec.begin(), valNameVec.end());
+  //  }else{
+  //      flag = 1;
+  //      queryReNameVec.insert(queryReNameVec.begin(), name.begin(), name.end());
+  //  }
+  //  if(flag == 0){
+		//for (size_t i = 0; i < name.size(); i++) {
+		//	vector<string>::iterator it = find(valNameVec.begin(), valNameVec.end(), name.at(i));
+		//	if (it == valNameVec.end()) {
+		//		queryReNameVec.push_back(name.at(i));
+		//	}
+		//}
+  //  }else{
+		//for (size_t i = 0; i < valNameVec.size(); i++) {
+		//	vector<string>::iterator it = find(name.begin(), name.end(), valNameVec.at(i));
+		//	if (it == name.end()) {
+		//		queryReNameVec.push_back(valNameVec.at(i));
+		//	}
+		//}
+  //  }
+
+    for(auto a:this->queryStrVec){
+        queryStrRe.push_back(a);
+    }
+    for(auto a:queryStr){
+        queryStrRe.push_back(a);
+    }//queryStrRe.swap(queryStr);以前这里是这么写的，感觉错了
     
     if(count > resultCount){
         countRe = resultCount;
-    }
-    else{
+    }else{
         countRe = count;
     }
     subQuery* re = new subQuery(id, ID, query.getID(), 2, queryStrRe, nameRe, countRe);

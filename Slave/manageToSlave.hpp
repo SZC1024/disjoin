@@ -57,7 +57,7 @@ public:
     bool is_Empty_Query() const;   //判断是否有查询语句
     bool is_NULL_ServerToSlave() const;  //判断slave对slave服务器是否开启
     bool is_NULL_ServerToMaster() const;    //判断slave对maste节点是否开启
-    queryClass* getSubQuery(size_t id1, size_t id2); //根据子查询得到ID
+    queryClass* getSubQuery(size_t id1, size_t id2); //得到子查询，id1是总查询id，id2是子查询id
     ~manageToSlave();
 };
 //由于pthread不能传递成员函数，故创建此函数
