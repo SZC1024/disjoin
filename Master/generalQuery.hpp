@@ -16,7 +16,11 @@
 #include<unordered_set>
 #include <set>
 #include "Master.h"
+#include <time.h>
+#include <sys/time.h>
 #define PORT 10008
+static const size_t STORE_START_NUM = 100000;//在host文件中，如果是存储与计算分离架构的话，存储节点的开始编号是100001，开始递增
+static size_t STORE_COMPUTE_SPLIT;//当存储与计算分离架构时，该值为1，否则为0
 using namespace std;
 
 //查询编号从1开始，0代表无效查询
@@ -30,8 +34,13 @@ private:
     string queryStr;      //查询语句
     vector<string> subStr; //子查询语句
     vector<vector<string>> subStrValName; //子查询语句变量名，和substr一一对应
-    unordered_map<size_t, client* > clRef;  //客户端映射
-    unordered_map<size_t,  string> ipRef; //子节点IP映射
+    unordered_map<size_t, client*> clRef;  //客户端映射
+    unordered_map<size_t, string> ipRef; //子节点IP映射
+    //map<size_t, client*> storeClRef;//存储节点客户端映射，如果host文件（-1标注）中指定有的话
+    //map<size_t, string> storeIpRef;//存储节点IP映射，如果host文件（-1标注）中指定有的话
+    //store的使用：当本系统作为存储与计算分离架构时，有专门的存储节点用来运行数据库，然后其他普通节点为计算连接的节点，这个时候storeClRef和storeIpRef有用
+    //如果为存储计算不分离架构，只有clRef和ipRef有用，所有节点即为存储节点，也是计算节点
+    //需要注意的是，当存储与计算分离时，任务下发时所使用的节点统计索引将失效，因为计算节点依赖的所有数据都将由存储节点通过网络传输过来，此时判断节点生成数据量无意义
     vector<vector<size_t> > result;
     size_t MaxSubID;
     vector<string> finalResultName;   //最终的结果名

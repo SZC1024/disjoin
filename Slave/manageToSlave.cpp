@@ -16,6 +16,7 @@ manageToSlave::manageToSlave(){
     size_t id;
     string line;
     while(in>>id>>line){
+        if (id > STORE_START_NUM) STORE_COMPUTE_SPLIT = 1;
         ipref[id] = line;
     }
     
@@ -190,6 +191,7 @@ bool manageToSlave::getAndSendData_To_Slave(){
                         serverToSlave->mySend(*it, &re, sizeof(re));
                     }
                 }
+                cout << id[0] << " " << id[1] << " 发送完毕" << endl;
             }
         FD_ZERO(&rfds);
         }
@@ -342,15 +344,15 @@ bool manageToSlave::getAndSendData_To_Master(){
                     }
                     cout<<"接收连接计划完成，下面开始执行连接计划"<<endl;
                     //传入查询计划并执行
-                    if(!plan1.empty()){
-                        cout<<"连接计划非空，开始执行连接计划"<<endl;
+                    if (!plan1.empty()) {
+                        cout << "连接计划非空" << endl;
                         generalQuery* temp = umap_Gen_Query[id1];
                         size_t idRe = plan1.at(0).ID;
-                        cout<<"变更连接计划前"<<endl;
-                        if(temp == nullptr) cout<<"temp是一个空结果: ID :"<<id1<<endl;
+                        cout << "变更连接计划前" << endl;
+                        if (temp == nullptr) cout << "temp是一个空结果: ID :" << id1 << endl;
                         temp->alterPlan(plan1);
-                        cout<<"连接计划变更完成"<<endl;
-                    }
+                        cout << "连接计划变更完成" << endl;
+                    }else cout << "连接计划为空，该节点无需执行" << endl;
                     //else{
                     //    //如果没有查询计划，返回0结果
                     //    cout<<"没有连接计划，返回结果0"<<endl;
@@ -364,7 +366,7 @@ bool manageToSlave::getAndSendData_To_Master(){
                     //    serverToMaster->mySend(*it,&re_4 , sizeof(size_t));
                     //    serverToMaster->mySend(*it,&re_2 , sizeof(size_t));
                     //}
-                    cout<<"查询计划接收完成"<<endl;
+                    cout<<"连接计划接收完成"<<endl;
                     //如果想做到同步，可以在这里之后对master发送完成信号，当master收集到所有slave的完成信号之后再发送执行连接计划命令
                     size_t temp = 1;
                     serverToMaster->mySend(*it, &temp, sizeof(size_t));

@@ -14,7 +14,7 @@ const char *queryToWeb(char *querySen){
     const char *result;
     vector<vector<size_t> > reVec;
     string str(querySen);
-    size_t id =  manage->addQuery(str);
+    size_t id = manage->addQuery(str);
     reVec = manage->exeuteQuery(id);
     
     cout<<"原始数据结果前十条:"<<endl;
@@ -26,7 +26,7 @@ const char *queryToWeb(char *querySen){
         }
         cout<<"下一条"<<endl;
     }
-   cout<<"总结果条数："<< reVec.size() << endl;
+    cout<<"总结果条数："<< reVec.size() << endl;
     return result;
 }
 
@@ -42,22 +42,21 @@ bool create(){
     }
     
     //读取节点信息
-    vector<string> slaveName;
+    map<size_t, string> slaveName;//参数1：slave节点编号，参数2：slave的ip地址
     ifstream in("./host");
+	if (!in) {
+		cout << "配置文件打开失败额" << endl;
+		exit(0);
+	}
     size_t id;
     in>>id;
     size_t id2;
     string ip;
-    if(! in){
-        cout<<"配置文件打开失败额"<<endl;
-        exit(0);
-    }
     while(in>>id2>>ip){
-        if(id2 == id){
-            continue;
-        }
+        if (id2 > STORE_START_NUM) STORE_COMPUTE_SPLIT = 1;
+        if (id2 == id) continue;
         else{
-            slaveName.push_back(ip);
+            slaveName[id2] = ip;
         }
     }
     in.close();
@@ -69,19 +68,33 @@ bool create(){
         pthread_detach(ths);
     }
     sleep(5);*/
-    for(size_t i = 0; i < slaveName.size(); i++){
-        cout<<"ip: "<<slaveName.at(i)<<endl;
-        client* cl = new client(slaveName.at(i), PORT);
-        cl->createSocket();
-        if(!cl->myConnect()) continue;
-            cl->mySend((void*)"create", 7);
-        // char temp[1024];
-        //memset(temp, 0, 1024);
-         //cl->myRec(temp);
-        // string str(temp);
-        // cout<<slaveName.at(i)<<" "<<str<<endl;
-        cl->myclose();
+    if (STORE_COMPUTE_SPLIT) {
+        for (auto sN : slaveName){
+            cout << "slave_" << sN.first << "的ip:" << sN.second << endl;
+			if (sN.first > STORE_START_NUM) {
+				client* cl = new client(sN.second, PORT);
+				cl->createSocket();
+				if (!cl->myConnect()) continue;
+				cl->mySend((void*)"create", 7);
+				// char temp[1024];
+				//memset(temp, 0, 1024);
+				//cl->myRec(temp);
+				// string str(temp);
+				// cout<<slaveName.at(i)<<" "<<str<<endl;
+				cl->myclose();
+			}
+        }
+    }else{
+        for (auto sN : slaveName){
+            cout << "slave_" << sN.first << "的ip:" << sN.second << endl;
+			client* cl = new client(sN.second, PORT);
+			cl->createSocket();
+			if (!cl->myConnect()) continue;
+			cl->mySend((void*)"create", 7);
+			cl->myclose();
+        }
     }
+
     cout << "load table and statistic" << endl;
     loadTableAndStatistic("./subData");
     return true;
@@ -90,38 +103,50 @@ bool create(){
 
 //关闭数据库
 void closeDb(){
-    vector<string> slaveName;
+    map<size_t, string> slaveName;//参数1：slave节点编号，参数2：slave的ip地址
     ifstream in("./host");
-    size_t id;
-    in>>id;
-    size_t id2;
-    string ip;
     if(! in){
         cout<<"配置文件打开失败"<<endl;
         exit(0);
     }
+    size_t id;
+    in>>id;
+    size_t id2;
+    string ip;
     while(in>>id2>>ip){
-        if(id2 == id){
-            continue;
-        }
+        if (id2 > STORE_START_NUM) STORE_COMPUTE_SPLIT = 1;
+        if (id2 == id) continue;
         else{
-            slaveName.push_back(ip);
+            slaveName[id2] = ip;
         }
     }
     in.close();
     
-    for(size_t i = 0; i < slaveName.size(); i++){
-        client* cl = new client(slaveName.at(i), PORT);
-        cl->createSocket();
-        cl->myConnect();
-        cl->mySend((void*)"close", 6);
-        cl->myclose();
-        cout<<slaveName.at(i)<<"关闭"<<endl;
-    }
+	if (STORE_COMPUTE_SPLIT) {
+		for (auto sN : slaveName) {
+			if (sN.first > STORE_START_NUM) {
+				client* cl = new client(sN.second, PORT);
+				cl->createSocket();
+				cl->myConnect();
+				cl->mySend((void*)"close", 6);
+				cl->myclose();
+                cout << "存储节点slave_" << sN.first << "关闭" << endl;
+			}
+		}
+	}else {
+		for (auto sN : slaveName) {
+			client* cl = new client(sN.second, PORT);
+			cl->createSocket();
+			cl->myConnect();
+			cl->mySend((void*)"close", 6);
+			cl->myclose();
+            cout << "存储&计算节点slave_" << sN.first << "关闭" << endl;
+		}
+	}
     delete manage;
 }
 
-//开始一个节点
+//开始一个节点//没有被用到过
 void* startSlave(void* ip){
     string str((char*) ip);
     string Dir = "/root/grace-slave/bin/lrelease/startslave";  //执行文件目录

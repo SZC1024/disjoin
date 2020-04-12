@@ -2,6 +2,12 @@
 
 const int _debug_for_szc_ = 1 ;
 
+double get_wall_time() {
+	struct timeval time;
+	if (gettimeofday(&time, NULL)) return 0;
+	return (double)time.tv_sec + (double)time.tv_usec * .0000001;
+}
+
 generalQuery::generalQuery(){
     
     ID = 0;
@@ -27,10 +33,11 @@ generalQuery::generalQuery(size_t id, string str){
     string str1;
     in>>id1;
     while(in>>id2>>str1){
-        if(id1 == id2) continue;
+        if (id2 > STORE_START_NUM) STORE_COMPUTE_SPLIT = 1;//该值仅在此有唯一写入
+        if (id1 == id2) continue;
         else{
-            ipRef[id2] = str1;
-            clRef[id2] = new client(str1, PORT);
+			ipRef[id2] = str1;
+			clRef[id2] = new client(str1, PORT);
             clRef[id2]->createSocket();
             clRef[id2]->myConnect();
         }
@@ -189,8 +196,10 @@ bool generalQuery::queryComposeToVec(const char* querySen){
 
 //创建partition,
 bool generalQuery:: createParition(){
-    cout<<"创建分区："<<"子查询语句有："<<subStr.size()<<endl;
-    for(size_t i = 1; i < ipRef.size() + 1; i++){   //根据节点个数创建分区
+    cout << "创建分区：" << "子查询语句有：" << subStr.size() << endl;
+    cout << "ipRef.size() = " << ipRef.size() << endl;
+    for(auto ip:ipRef){   //根据节点个数创建分区
+        //size_t i = 1; i < ipRef.size() + 1; i++
         unordered_map<size_t, string> umap;
         unordered_map<size_t, size_t> umap_re;
         unordered_map<size_t, vector<string> > umap_name;
@@ -198,20 +207,30 @@ bool generalQuery:: createParition(){
             //调用接口得到该查询语句大概有多少条
             size_t temp = 0;
             temp = 1000;
-            cout<<"getRsultSzie: "<<endl;
+            //cout<<"getRsultSzie: "<<endl;
             //temp = getResultSize(subStr.at(j), i);
             if(temp == 0){
                 continue;
             }
             else{
-                umap[MaxSubID] = subStr.at(j);
-                umap_re[MaxSubID] = temp;
-                umap_name[MaxSubID] = subStrValName.at(j);
-                MaxSubID++;
-                cout<<"当前MaxSubID："<<MaxSubID<<endl;
+                if(STORE_COMPUTE_SPLIT){
+					if (ip.first > STORE_START_NUM) {
+						umap[MaxSubID] = subStr.at(j);
+						umap_re[MaxSubID] = temp;
+						umap_name[MaxSubID] = subStrValName.at(j);
+						cout << "当前MaxSubID：" << MaxSubID << endl;
+						MaxSubID++;
+					}
+                }else{
+					umap[MaxSubID] = subStr.at(j);
+					umap_re[MaxSubID] = temp;
+					umap_name[MaxSubID] = subStrValName.at(j);
+					cout << "当前MaxSubID：" << MaxSubID << endl;
+					MaxSubID++;
+                }
             }
         }
-        partSub[i] = new partitionToSub(i, umap, umap_re, umap_name);
+        partSub[ip.first] = new partitionToSub(ip.first, umap, umap_re, umap_name);
     }
     return true;
 }
@@ -341,7 +360,7 @@ bool generalQuery::createPlan(){
     //将所有分区内的所有子查询汇集起来，存储在idtosubq里边
     //map<size_t,subQuery*> idtosubq;//第一个参数为ID//因为其他函数也需要，所以声明到了类里
     for(auto pts:partSub){
-        vector<size_t> subid = pts.second->getAllSubID();
+        vector<size_t> subid = pts.second->getAllSubID();//如果是计算与分离架构，在计算节点这里get应该get到一个空vector
         for(int i=0;i<subid.size();i++){
             idtosubq[subid[i]]=pts.second->getSubQuery(subid[i]);
         }
@@ -593,7 +612,15 @@ if(_debug_for_szc_) cout<<"创建PlanTree结束"<<endl;
 
 if(_debug_for_szc_) cout<<"开始进入分解计划"<<endl;
 if(_debug_for_szc_) cout << "partSub.size() = " << partSub.size() << endl;
-    decomposePlan(generalPlanTree, partSub.size());
+    int computeNodeNum = 0;
+    if(STORE_COMPUTE_SPLIT){
+		for (auto pts : partSub) {
+			if (pts.first < STORE_START_NUM) computeNodeNum++;
+		}
+    }else{
+        computeNodeNum = partSub.size();
+    }
+    decomposePlan(generalPlanTree, computeNodeNum);
     //decomposePlan(generalPlanTree,2);
 if(_debug_for_szc_) cout<<"分解查询计划结束，并将各partition的执行计划已下发"<<endl;
     
@@ -691,24 +718,90 @@ if(_debug_for_szc_){
         }
     }
 
-    //在这里做查询计划的下发
-    for (int i = 0; i < partitionPlan->size();i++) {
-        partSub[i + 1]->alterSubPlan(*(partitionPlan->at(i)));
-    }
-    for(unordered_map<size_t, partitionToSub*>::iterator iter = partSub.begin(); iter != partSub.end(); iter++){
-        if(iter->second->getSubPlanSize() == 0){
-			vector<structPlan> temp;
-			structPlan a;
-			a.ID = 0;
-			a.type = 0;
-			temp.push_back(a);
-			partSub[iter->first]->alterSubPlan(temp);
+    //在这里把所有subQuery的查询语句都打印出来看看
+    for(auto a:idtosubq){
+        cout << "id = " << a.first << " subQuery查询语句:" << endl;
+        vector<string> queryvec = a.second->getQueryVec();
+        for(auto q:queryvec){
+            cout << a.first << " --- " << q << endl;
         }
+    }
+
+    //在这里做根据统计索引选择连接计划需要放的位置
+    if(STORE_COMPUTE_SPLIT){//计算与存储分离架构不需考虑统计索引
+        //在这里做查询计划的下发（这里partitionPlan->size()必定小于等于计算节点的数量（若计算与存储分离架构））
+        for (int i = 0; i < partitionPlan->size(); i++) {
+            partSub[i + 1]->alterSubPlan(*(partitionPlan->at(i)));
+        }
+        for(unordered_map<size_t, partitionToSub*>::iterator iter = partSub.begin(); iter != partSub.end(); iter++){
+            if(iter->second->getSubPlanSize() == 0){
+			    vector<structPlan> temp;
+			    structPlan a;
+			    a.ID = 0;
+			    a.type = 0;
+			    temp.push_back(a);
+			    partSub[iter->first]->alterSubPlan(temp);
+            }
+        }
+    }else{//混合架构需要考虑（也就是普通模式）
+		struct plan_slave_num {
+			size_t planid;
+			size_t slaveid;
+			size_t result;
+		};
+        vector<plan_slave_num> psn;
+        //map<size_t, map<size_t, size_t> > partNumToResult;
+        for (size_t partnum = 0; partnum < partitionPlan->size(); partnum++) {
+            size_t rootid = partitionPlan->at(partnum)->at(0).ID;
+            vector<string> queryStr = idtosubq[rootid]->getQueryVec();
+            for (size_t statslaveid = 0; statslaveid < clRef.size(); statslaveid++) {
+                size_t result = 0;
+                for(auto str:queryStr){
+                    result += getResultSize(str, statslaveid);
+                }
+                //partNumToResult[partnum][statslaveid + 1] = result;
+                plan_slave_num* p = new plan_slave_num;
+                p->planid = partnum;
+                p->slaveid = statslaveid + 1;//因为getResultSize函数中slave是0开头的，而partSub中slave是1开头的
+                p->result = result;
+                psn.push_back(*p);
+            }
+        }//之后partNumToResult中存储了每个partitionPlan中根节点的所有子查询语句（之和）对应每个slave节点的统计索引值
+        map<size_t, size_t> plantoslave;
+        while(!psn.empty()){
+            sort(psn.begin(), psn.end(), [](plan_slave_num a, plan_slave_num b)->bool {return a.result < b.result; });//从大到小排序
+            size_t selectedplanid = psn[0].planid;
+            size_t selectedslaveid = psn[0].slaveid;
+            plantoslave[selectedplanid] = selectedslaveid;
+            for (vector<plan_slave_num>::iterator iter = psn.begin(); iter != psn.end();) {
+                if(iter->slaveid == selectedslaveid){
+                    iter = psn.erase(iter);
+                    continue;
+                }
+                if (iter->planid == selectedplanid) {
+                    iter = psn.erase(iter);
+                    continue;
+                }
+                iter++;
+            }
+        }//在此之后plantoslave中存储了每个plan应该发送给哪个slave节点执行
+        for(auto a:plantoslave){
+            partSub[a.second]->alterSubPlan(*(partitionPlan->at(a.first)));
+        }
+		for (unordered_map<size_t, partitionToSub*>::iterator iter = partSub.begin(); iter != partSub.end(); iter++) {
+			if (iter->second->getSubPlanSize() == 0) {
+				vector<structPlan> temp;
+				structPlan a;
+				a.ID = 0;
+				a.type = 0;
+				temp.push_back(a);
+				partSub[iter->first]->alterSubPlan(temp);
+			}
+		}
     }
 
     //应该在这里也将partitionToSub中的subRef也更新(利用partitionToSub的addSubref函数)
     //因为他涉及到了全局映射表的信息完整
-
     //插入优先级：最底层查询 > 连接计划根 > 其他所有(一般子查询)
     //最底层查询已经在创建的时候插入过了
     set<size_t> floorSubQuery;
@@ -785,32 +878,31 @@ if(_debug_for_szc_) cout<<"任务下发结束，本模块结束"<<endl;
 //可以考虑多线程做
 bool generalQuery::sendPlan(){
     cout<<"发送连接计划"<<endl;
-    for(size_t i = 1; i < partSub.size() + 1; i++){
-        auto it_p = partSub.find(i);
-        if(it_p == partSub.end()){
-            cout<<"不存在分区，分区ID："<<i<<endl;
-            exit(0);
-        }
-        partitionToSub* temp = it_p->second;
-        size_t count = temp->getSubPlanSize();
-        vector<structPlan> temp2 = temp->getSubPlan();
-        //如果只有一个不执行
-        if(temp2.at(0).ID == 0) count = 0;
+    for(auto pts:partSub){
+        //size_t i = 1; i < partSub.size() + 1; i++
+        //auto it_p = partSub.find(i);
+        //if(it_p == partSub.end()){
+        //    cout<<"不存在分区，分区ID："<<i<<endl;
+        //    exit(0);
+        //}
+        //partitionToSub* temp = it_p->second;
+        size_t count = pts.second->getSubPlanSize();
+        vector<structPlan> temp2 = pts.second->getSubPlan();
         
-        cout<<"连接计划："<< i <<"计划大小 "<< temp2.size() <<endl;
+        cout<<"连接计划："<< pts.first <<"计划大小 "<< temp2.size() <<endl;
         
-        auto it_cl = clRef.find(i);
-        if(it_cl == clRef.end()){
-            cout<<"不存在客户端:"<<i<<endl;
-            exit(0);
-        }
+		auto it_cl = clRef.find(pts.first);
+		if (it_cl == clRef.end()) {
+			cout << "不存在客户端:" << pts.first << endl;
+			exit(0);
+		}
         client* cl = it_cl->second;
         cl->mySend((void*)"plan", 5);
         size_t id_10 = ID;
-        cout<<"发送连接计划时候的ID"<<ID<<endl;
+        cout<<"发送连接计划时候的ID = "<<ID<<endl;
         cl->mySend(&id_10, sizeof(size_t));
         cl->mySend(&count, sizeof(size_t));
-        for(size_t j = 0; j < temp2.size() && temp2.at(0).ID != 0; j++){
+        for(size_t j = 0; j < temp2.size(); j++){
             size_t id = temp2.at(j).ID;
             int type1 = temp2.at(j).type;
             cl->mySend(&id, sizeof(size_t));
@@ -822,7 +914,7 @@ bool generalQuery::sendPlan(){
 
 //开始执行查询
 bool generalQuery::mystart(){
-    
+    double starttime, endtime;
     //查询分解
     if(! decomposeQueryAll()){
         cout<<"查询分解失败"<<endl;
@@ -907,6 +999,7 @@ bool generalQuery::mystart(){
     }else flag = 0;
     if (flag == 1) {
         cout << "子节点所有连接计划接收完毕，开始命令执行连接计划" << endl;
+        starttime = get_wall_time();
         if(!orderSlaveExecutePlan()){
             cout << "发送命令slave节点执行连接计划出错" << endl;
         }
@@ -916,7 +1009,8 @@ bool generalQuery::mystart(){
     if(!waitResult()){
 	    cout<<"发送结果出错"<<endl;
     }
-    
+    endtime = get_wall_time();
+    cout << "执行连接计划所用时间:" << endtime - starttime << "秒" << endl;
     return true;
 }
 
@@ -924,29 +1018,30 @@ bool generalQuery::mystart(){
 bool generalQuery:: waitResult(){
 
     vector<vector<vector<size_t> > > reVV;
-    for(size_t i = 1; i < clRef.size() + 1; i++){
+    for(auto cl:clRef){
+        //size_t i = 1; i < clRef.size() + 1; i++
         vector<vector<size_t> > reVec;
-        auto it_cl = clRef.find(i);
-        if(it_cl == clRef.end()){
-            cout<<"客户端不存在："<<i<<endl;
-            exit(0);
-        }
-        client * cl = it_cl->second;
+        //auto it_cl = clRef.find(i);
+        //if(it_cl == clRef.end()){
+        //    cout<<"客户端不存在："<<i<<endl;
+        //    exit(0);
+        //}
+        //client * cl = it_cl->second;
         size_t idC;
         size_t idS;
         size_t countA;
 
-        cl->myRec(&idC);
+        cl.second->myRec(&idC);
         if(idC!=0){
-            cl->myRec(&idS);
-            cl->myRec(&countA);
+            cl.second->myRec(&idS);
+            cl.second->myRec(&countA);
             for(size_t j = 0; j < countA; j++){
                 size_t line;
-                cl->myRec(&line);
+                cl.second->myRec(&line);
                 vector<size_t> re;
                 for(size_t k = 0; k < line; k++){
                     size_t re_1;
-                    cl->myRec(&re_1);
+                    cl.second->myRec(&re_1);
                     if(re_1 == 0) break;
                     else re.push_back(re_1);
                 }
@@ -980,59 +1075,109 @@ vector<vector<size_t>> generalQuery::getResult()const{
 bool generalQuery::sendSubqueryToSlave(){
     
     cout<<"开始发送子查询"<<endl;
-    vector<size_t> eCount;  //总变量计数
-    for(size_t i = 1; i < partSub.size() + 1; i++){ //计算子查询个数,分区从1开始
+    map<size_t,size_t> eCount;//(参数1：分区id值，参数2：分区子查询个数)
+    for(auto pts:partSub){//计算subquery个数
+        //size_t i = 1; i < partSub.size() + 1; i++
         size_t count = 0;
-        
-        auto it_part = partSub.find(i);
-        if(it_part == partSub.end()){
-            cout<<"分区不存在L："<<i<<endl;
-            exit(0);
-        }
-        partitionToSub* temp = it_part->second;
-        vector<size_t> id = temp->getAllSubID();
+        //auto it_part = partSub.find(i);
+        //if(it_part == partSub.end()){
+        //    cout<<"分区不存在L："<<i<<endl;
+        //    exit(0);
+        //}
+        //partitionToSub* temp = it_part->second;
+        vector<size_t> id = pts.second->getAllSubID();
         count = id.size();
-        cout<<"分区id个数1： "<<count<<endl;
-        eCount.push_back(count);  //从0开始存！！
+        cout<<"分区"<<pts.first<<"中子查询个数:"<<count<<endl;
+        eCount[pts.first]=count;
     }
     
     //此处可以考虑多线程,发送查询语句
-    for(size_t i = 1; i < partSub.size() + 1; i++){  //根据分区发送
-        partitionToSub* temp = partSub[i];
-        vector<size_t> id = temp->getAllSubID();
-        cout<<"分区id个数: "<<id.size()<<endl;
-        client* cl = clRef[i];
-        size_t count = eCount.at(i - 1);   //！！差值
-        size_t id3 = ID;
-        cout<<"查询ID： "<<ID<<endl;
-        cl->mySend((void *)"sentense", 9);  //先发送信号
-        cl->mySend(&id3, sizeof(size_t)); //发送查询类ID
-        cl->mySend(&count, sizeof(size_t)); //发送总个数
-        for(size_t j = 0; j < id.size(); j++){ //发送子查询
+    if(STORE_COMPUTE_SPLIT){//存储与计算分离
+        for(auto pts:partSub){//根据分区发送
+            //size_t i = 1; i < partSub.size() + 1; i++
+            if(pts.first > STORE_START_NUM){
+                //partitionToSub* temp = pts.second;
+                vector<size_t> id = pts.second->getAllSubID();//该分区中所有子查询的id
+                //cout<<"分区id个数: "<<id.size()<<endl;
+                client* cl = clRef[pts.first];
+                size_t count = eCount[pts.first];
+                size_t id3 = ID;
+                cout<<"总查询ID： "<<ID<<endl;
+                cl->mySend((void *)"sentense", 9);  //先发送信号
+                cl->mySend(&id3, sizeof(size_t)); //发送查询类ID
+                cl->mySend(&count, sizeof(size_t)); //发送子查询个数
+                for(size_t j = 0; j < eCount[pts.first]; j++){ //发送子查询
             
-            vector<string> queryStr1 = temp->getSubQueryStr(id.at(j));
-            vector<string> queryName = temp->getSubQueryName(id.at(j));
+                    vector<string> queryStr1 = pts.second->getSubQueryStr(id.at(j));
+                    vector<string> queryName = pts.second->getSubQueryName(id.at(j));
             
-            //发送ID
-            size_t id2 = id.at(j);
-            cl->mySend(&id2, sizeof(size_t));
+                    //发送ID
+                    size_t id2 = id.at(j);
+                    cl->mySend(&id2, sizeof(size_t));
             
-            //发送查询语句
-            cl->mySend((void*) queryStr1.at(0).c_str(), queryStr1.at(0).size());
+                    //发送查询语句
+                    cl->mySend((void*) queryStr1.at(0).c_str(), queryStr1.at(0).size());
             
-            //发送变量名数组个数
-            size_t nameNum = queryName.size();
-            cl->mySend(&nameNum, sizeof(size_t));
+                    //发送变量名数组个数
+                    size_t nameNum = queryName.size();
+                    cl->mySend(&nameNum, sizeof(size_t));
             
-            //发送变量名
-            for(size_t k = 0; k < queryName.size(); k++){
-                string str1 = queryName.at(k);
-                cout<<"变量名："<<str1<<endl;
-                cl->mySend((void*)str1.c_str(), str1.size());
+                    //发送变量名
+                    for(size_t k = 0; k < queryName.size(); k++){
+                        string str1 = queryName.at(k);
+                        cout<<"变量名："<<str1<<endl;
+                        cl->mySend((void*)str1.c_str(), str1.size());
+                    }
+                    cout<<"查询语句"<<queryStr1.at(0)<<endl;
+                }
+            }else{
+				client* cl = clRef[pts.first];
+				size_t count = eCount[pts.first];//这个为0
+				size_t id3 = ID;
+				cout << "总查询ID： " << ID << endl;
+				cl->mySend((void*)"sentense", 9);
+				cl->mySend(&id3, sizeof(size_t));
+                cl->mySend(&count, sizeof(size_t));//把这个0发过去，目的是为了仅仅创建一个generalQuery类，不往里边传子查询，因为压根就没有
             }
-            cout<<"查询语句"<<queryStr1.at(0)<<endl;
+
         }
+    }else{//存储与计算不分离
+		for (auto pts : partSub) {//根据分区发送
+			vector<size_t> id = pts.second->getAllSubID();//该分区中所有子查询的id
+			client* cl = clRef[pts.first];
+			size_t count = eCount[pts.first];
+			size_t id3 = ID;
+			cl->mySend((void*)"sentense", 9);  //先发送信号
+			cl->mySend(&id3, sizeof(size_t)); //发送查询类ID
+			cl->mySend(&count, sizeof(size_t)); //发送子查询个数
+			for (size_t j = 0; j < eCount[pts.first]; j++) { //发送子查询
+
+				vector<string> queryStr1 = pts.second->getSubQueryStr(id.at(j));
+				vector<string> queryName = pts.second->getSubQueryName(id.at(j));
+
+				//发送ID
+				size_t id2 = id.at(j);
+				cl->mySend(&id2, sizeof(size_t));
+
+				//发送查询语句
+				cl->mySend((void*)queryStr1.at(0).c_str(), queryStr1.at(0).size());
+
+				//发送变量名数组个数
+				size_t nameNum = queryName.size();
+				cl->mySend(&nameNum, sizeof(size_t));
+
+				//发送变量名
+				for (size_t k = 0; k < queryName.size(); k++) {
+					string str1 = queryName.at(k);
+					cout << "变量名：" << str1 << endl;
+					cl->mySend((void*)str1.c_str(), str1.size());
+				}
+				cout << "查询语句" << queryStr1.at(0) << endl;
+			}
+		}
     }
+
+
     cout<<"结束发送查询语句"<<endl;
     return true;
 }
@@ -1072,12 +1217,10 @@ bool generalQuery::sendGlobalRef(){
         cout << endl;
     }
 
-    for(size_t i = 1; i <clRef.size() + 1; i++){
-        client* cl = clRef[i];
-        cl->mySend((void *)"global", 7);  //发送信号
-        cl->mySend(&id, sizeof(size_t)); //发送ID
-        cl->mySend(&count, sizeof(size_t)); //发送映射个数
-        
+    for(auto cl:clRef){
+        cl.second->mySend((void *)"global", 7);  //发送信号
+        cl.second->mySend(&id, sizeof(size_t)); //发送总查询ID
+        cl.second->mySend(&count, sizeof(size_t)); //发送映射个数
         unordered_map<size_t, size_t>::iterator it;
         for(it = globalIDRef.begin(); it != globalIDRef.end(); it++){
             size_t id1 = it->first;
@@ -1085,7 +1228,7 @@ bool generalQuery::sendGlobalRef(){
             size_t id_5[2];
             id_5[0] = id1;
             id_5[1] = node;
-            cl->mySend(&id_5, sizeof(id_5));
+            cl.second->mySend(&id_5, sizeof(id_5));
         }
     }
     return true;
@@ -1095,11 +1238,19 @@ bool generalQuery::sendGlobalRef(){
 bool generalQuery::orderSlaveExecuteSubQuery(){
     cout << "命令子节点开始执行子查询，总查询id：" <<ID<< endl;
     size_t id = ID;
-    for (size_t i = 1; i < clRef.size() + 1; i++) {
-        client* cl = clRef[i];
-        cl->mySend((void*)"executeSubQuery", 16);
-        cl->mySend(&id, sizeof(size_t));
-    }
+    //if(STORE_COMPUTE_SPLIT){
+    //    for(auto cl:clRef){
+    //        if(cl.first > STORE_START_NUM){
+    //            cl.second->mySend((void*)"executeSubQuery", 16);
+    //            cl.second->mySend(&id, sizeof(size_t));
+    //        }
+    //    }
+    //}else{
+        for(auto cl:clRef){
+			cl.second->mySend((void*)"executeSubQuery", 16);
+			cl.second->mySend(&id, sizeof(size_t));
+        }
+    //}
     return true;
 }
 
@@ -1108,11 +1259,10 @@ bool generalQuery::orderSlaveExecutePlan(){
     cout << "命令slave节点开始执行连接计划，总查询id：" << ID << endl;
     size_t id = ID;
     size_t generalRootId = idtosubq.rbegin()->first;//总树根子查询id
-    for (size_t i = 1; i < clRef.size() + 1; i++) {
-        client* cl = clRef[i];
-        cl->mySend((void*)"executePlan", 12);
-        cl->mySend(&id, sizeof(size_t));
-        cl->mySend(&generalRootId, sizeof(size_t));
+    for (auto cl:clRef) {
+        cl.second->mySend((void*)"executePlan", 12);
+        cl.second->mySend(&id, sizeof(size_t));
+        cl.second->mySend(&generalRootId, sizeof(size_t));
     }
     return true;
 }

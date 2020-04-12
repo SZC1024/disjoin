@@ -14,14 +14,11 @@
 #include "manageToMaster.hpp"
 #include "webAPI.hpp"
 using namespace std;
-double get_wall_time()  
-{    	  
-    struct timeval time ;    	      
-    if (gettimeofday(&time,NULL)){    			  
-	return 0;    			  
-    }    		  
-  return (double)time.tv_sec + (double)time.tv_usec * .0000001;    		      
-}    
+double get_wall_time_main(){
+	struct timeval time;
+	if (gettimeofday(&time,NULL)) return 0;
+	return (double)time.tv_sec + (double)time.tv_usec * .0000001;
+}
 int main(int argc, const char * argv[]) {
     const char* re;
     create();
@@ -41,10 +38,10 @@ int main(int argc, const char * argv[]) {
 		while (getline(in, line)) {
 			query += line + '\n';
 		}
-		double startTime = get_wall_time();
+		double startTime = get_wall_time_main();
 		re = queryToWeb((char*)query.c_str());
-		double endTime = get_wall_time();
-		cout<<"耗费的时间"<<endTime - startTime<<endl;
+		double endTime = get_wall_time_main();
+		cout<<"总共耗费的时间:"<<endTime - startTime<<"秒"<<endl;
     }
     closeDb();
     return 0;

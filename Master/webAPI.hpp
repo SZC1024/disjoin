@@ -19,6 +19,8 @@
 #include <algorithm>
 #include <fstream>
 #include "Master.h"
+//extern const size_t	STORE_START_NUM;
+//extern size_t STORE_COMPUTE_SPLIT;
 using namespace std;
 #define PORT 10008  //slave服务器端口
 extern manageToMaster* manage;
@@ -36,6 +38,6 @@ void closeDb();
 //回收内存
 void resFree();
 
-void* startSlave(void* ip);
+void* startSlave(void* ip);//没有被用到过
 }
 #endif /* webAPI_hpp */

@@ -49,8 +49,8 @@ bool client::mySend(void* buffer, size_t size){
    // cout<<"发送串长度："<<err<<endl;
     index = 0;
     while (size) {
-        if(size > 4096){
-            err = send(socketID, (char *)buffer + index, 4096, 0);
+        if(size > 1024000000){
+            err = send(socketID, (char *)buffer + index, 1024000000, 0);
         }
         else{
             err = send(socketID, (char *)buffer + index, size, 0);

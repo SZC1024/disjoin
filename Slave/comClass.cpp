@@ -53,7 +53,7 @@ int server::mylisten(){
     
     int temp;
     len = sizeof(serverAddr);
-    temp = listen(socketID, 1024); //最多监听1024个队列
+    temp = listen(socketID, 1024000); //最多监听1024个队列
     
     if(temp == -1){
         
@@ -122,8 +122,8 @@ bool server::mySend(int conn, void* buffer, size_t size){
     }
     index = 0;
     while (size) {
-        if(size > 4096){
-            err = send(conn, (char*) buffer + index, 4096, 0);
+        if(size > 1024000000){
+            err = send(conn, (char*) buffer + index, 1024000000, 0);
         }
         else{
             err = send(conn,(char*) buffer + index, size, 0);

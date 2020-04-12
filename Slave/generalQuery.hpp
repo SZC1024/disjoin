@@ -22,6 +22,8 @@
 #include<algorithm>
 #include<string.h>
 #include<fstream>
+static const size_t STORE_START_NUM = 100000;//在host文件中，如果是存储与计算分离架构的话，存储节点的开始编号是100001，开始递增
+static size_t STORE_COMPUTE_SPLIT;//当存储与计算分离架构时，该值为1
 using namespace std;
 
 class generalQuery{
@@ -31,6 +33,7 @@ public:
     vector<struct structPlan> plan;  //根节点为最终结果，从0开始
 private:
     size_t ID;    //查询类ID
+    size_t myNodeId;
     unordered_map<size_t, size_t> globalSubQueryID;  //全局子查询ID,及初始产生节点编号
     unordered_map<size_t, queryClass* > ownedSubQuery; //拥有的子查询结果
     //unordered_map<size_t, string> subQueryStr;  //该节点所拥有的的子查询语句及ID映射

@@ -20,7 +20,8 @@
 #include <string.h>
 #include <algorithm>
 #include <fstream>
-
+//extern const size_t STORE_START_NUM;
+//extern size_t STORE_COMPUTE_SPLIT;
 using namespace std;
 
 class manageToMaster{

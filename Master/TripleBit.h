@@ -38,6 +38,7 @@ using namespace std;
 // 0: chinese; 1: english
 #define LANG 0
 #define SLAVE_NUM 3
+// 3为默认，这个数值必须和数据分解时的数值必须保持一致！
 extern char *DATABASE_PATH;
 
 template<class T>

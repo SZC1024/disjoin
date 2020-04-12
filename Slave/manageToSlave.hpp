@@ -26,6 +26,8 @@
 #include <unistd.h>
 #include <fstream>
 #include "../TripleBit/tripleBitQueryAPI.h"
+//extern const size_t STORE_START_NUM;
+//extern size_t STORE_COMPUTE_SPLIT;
 using namespace std;
 
 //slave节点之间服务端默认端口是10001

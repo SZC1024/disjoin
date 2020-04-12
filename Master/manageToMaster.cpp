@@ -20,6 +20,7 @@ manageToMaster::manageToMaster(){
     size_t id;
     string str;
     while(in>>id>>str){
+        if (id > STORE_START_NUM) STORE_COMPUTE_SPLIT = 1;
         ipRef[id] = str;
     }
 }
