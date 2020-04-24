@@ -115,7 +115,7 @@ bool serverSlave::mySend(int conn, void* buffer, size_t size){
     int err = 0;
     size_t index = 0;
     index = size;
-    err = send(conn, &index, sizeof(size_t), 0);
+    err = send(conn, &index, sizeof(index), 0);
    // cout<<"发送串长度："<<index<<endl;
     if(err <= -1){
         if(ereaConnList(conn)){

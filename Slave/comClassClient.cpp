@@ -49,8 +49,8 @@ bool client::mySend(void* buffer, size_t size){
    // cout<<"发送串长度："<<err<<endl;
     index = 0;
     while (size) {
-        if(size > 1024000000){
-            err = send(socketID, (char *)buffer + index, 1024000000, 0);
+        if(size > 4096){
+            err = send(socketID, (char *)buffer + index, 4096, 0);
         }
         else{
             err = send(socketID, (char *)buffer + index, size, 0);
@@ -70,12 +70,13 @@ bool client::myRec(void *buffer){
     int err;
     size_t index = 0;
     
-    err = recv(socketID, &size, sizeof(size_t), 0);
-    memset(buffer, 0, size);
+    err = recv(socketID, &size, sizeof(size), 0);
+    //memset(buffer, 0, size);
     //cout<<"接受串长度："<<err<<endl;
     if(err <= 0){
         cout<<"客户端接收失败"<<endl;
         close(socketID);
+        exit(0);
         return false;
     }
     while(size){

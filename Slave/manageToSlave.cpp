@@ -240,9 +240,14 @@ bool manageToSlave::getAndSendData_To_Master(){
                 if(str == "create"){
                     //加载数据库
                     cout<<"创建数据库"<<endl;
+                    size_t createok = 0;
 				    if (create("./mydatabase/")) {
-					    serverToMaster->mySend(*it, (void*)"Create OK", 10);
-				    }
+                        createok = 1;
+					    serverToMaster->mySend(*it, &createok, sizeof(createok));
+                    }else {
+                        createok = 0;
+                        serverToMaster->mySend(*it, &createok, sizeof(createok));
+                    }
                 }
                 else if(str == "sentense"){
                     //发送查询语句
@@ -311,10 +316,14 @@ bool manageToSlave::getAndSendData_To_Master(){
                     size_t temp = 1;
                     serverToMaster->mySend(*it, &temp, sizeof(size_t));
                 }
+                else if(str == "closeDB"){
+                    //关闭数据库
+                    cout<<"关闭数据库"<<endl;
+                    closeDB();
+                    //myclose();
+                }
                 else if(str == "close"){
-                    //关闭数据库,清除端口
-                    cout<<"关闭数据库，关闭服务器"<<endl;
-                    //closeDB();
+                    cout << "关闭服务器" << endl;
                     myclose();
                 }
                 else if(str == "plan"){

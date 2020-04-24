@@ -53,7 +53,7 @@ int server::mylisten(){
     
     int temp;
     len = sizeof(serverAddr);
-    temp = listen(socketID, 1024000); //最多监听1024个队列
+    temp = listen(socketID, 1024); //最多监听1024个队列
     
     if(temp == -1){
         
@@ -84,13 +84,13 @@ bool server::myRec(int conn, void *buffer){
     int err;
     size_t index = 0;
     
-    err = recv(conn, &size, sizeof(size_t), 0);
-   // memset(buffer, 0, size);
+    err = recv(conn, &size, sizeof(index), 0);
+    //memset(buffer, 0, size);
     //cout<<"接受串长度1："<<size<<endl;
     if(err <= 0){
         if(ereaConnList(conn)){
-        cout<<"删除:"<<conn<<endl;
-        close(conn);
+            cout<<"删除:"<<conn<<endl;
+            close(conn);
         }
         return false;
     }
@@ -111,7 +111,7 @@ bool server::mySend(int conn, void* buffer, size_t size){
     int err;
     size_t index = 0;
     index = size;
-    err = send(conn, &index, sizeof(size_t), 0);
+    err = send(conn, &index, sizeof(index), 0);
     //cout<<"发送串长度1："<<index<<endl;
     index = 0;
     if(err <= 0){
@@ -122,8 +122,8 @@ bool server::mySend(int conn, void* buffer, size_t size){
     }
     index = 0;
     while (size) {
-        if(size > 1024000000){
-            err = send(conn, (char*) buffer + index, 1024000000, 0);
+        if(size > 4096){
+            err = send(conn, (char*) buffer + index, 4096, 0);
         }
         else{
             err = send(conn,(char*) buffer + index, size, 0);

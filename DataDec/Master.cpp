@@ -479,7 +479,7 @@ int createDatabase(string &dataFile, vector <string> &slaveName, string &last, s
 		delete slavesTempFile[i];
 	}
 	
-	
+	formatTempFile(rawFacts, "./");
 	
 	// Created by peng on 2019-12-23, 15:38:07
 	// 加载table和索引，并测试查询语句转换，释放table和索引

@@ -17,14 +17,15 @@ const char *queryToWeb(char *querySen){
     size_t id = manage->addQuery(str);
     reVec = manage->exeuteQuery(id);
     
-    cout<<"原始数据结果前十条:"<<endl;
+    //cout<<"原始数据结果前十条:"<<endl;
+    cout << "result:" << endl;
     for(size_t i = 0; i < reVec.size(); i++){
         
-        if(i > 10) break;
+        //if(i > 10) break;
         for(size_t j = 0; j < reVec[i].size(); j++){
-            cout<<reVec[i].at(j)<<"\t"<<endl;
+            cout<<reVec[i].at(j)<<"\t";
         }
-        cout<<"下一条"<<endl;
+        cout << endl;
     }
     cout<<"总结果条数："<< reVec.size() << endl;
     return result;
@@ -68,11 +69,13 @@ bool create(){
         pthread_detach(ths);
     }
     sleep(5);*/
+    map<size_t, client*> slaveclient;
     if (STORE_COMPUTE_SPLIT) {
         for (auto sN : slaveName){
             cout << "slave_" << sN.first << "的ip:" << sN.second << endl;
 			if (sN.first > STORE_START_NUM) {
 				client* cl = new client(sN.second, PORT);
+                slaveclient[sN.first] = cl;
 				cl->createSocket();
 				if (!cl->myConnect()) continue;
 				cl->mySend((void*)"create", 7);
@@ -81,18 +84,31 @@ bool create(){
 				//cl->myRec(temp);
 				// string str(temp);
 				// cout<<slaveName.at(i)<<" "<<str<<endl;
-				cl->myclose();
 			}
+        }
+        for (auto sC : slaveclient) {
+            size_t creatok = 0;
+            sC.second->myRec(&creatok);
+            if (creatok) cout << sC.first << "号slave加载数据库成功" << endl;
+            else cout << sC.first << "号slave加载数据库失败！" << endl;
+            sC.second->myclose();
         }
     }else{
         for (auto sN : slaveName){
             cout << "slave_" << sN.first << "的ip:" << sN.second << endl;
 			client* cl = new client(sN.second, PORT);
+            slaveclient[sN.first] = cl;
 			cl->createSocket();
 			if (!cl->myConnect()) continue;
 			cl->mySend((void*)"create", 7);
-			cl->myclose();
         }
+		for (auto sC : slaveclient) {
+			size_t creatok = 0;
+			sC.second->myRec(&creatok);
+			if (creatok) cout << sC.first << "号slave加载数据库成功" << endl;
+			else cout << sC.first << "号slave加载数据库失败！" << endl;
+			sC.second->myclose();
+		}
     }
 
     cout << "load table and statistic" << endl;
@@ -143,7 +159,6 @@ void closeDb(){
             cout << "存储&计算节点slave_" << sN.first << "关闭" << endl;
 		}
 	}
-    delete manage;
 }
 
 //开始一个节点//没有被用到过

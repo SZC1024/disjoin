@@ -159,7 +159,7 @@ string generalQuery::queryDecomposeFile(string& queryFile){//queryFile为查询�
     cmdString += queryFile;
 
     int pid = 0;
-    //pid = system(cmdString.c_str());//暂时使用自己预先写好的子查询，跳过查询分解
+    pid = system(cmdString.c_str());//暂时使用自己预先写好的子查询，跳过查询分解
 
     if(pid == 0){
         cout<<"查询语句分解成功"<<endl;
@@ -982,6 +982,50 @@ bool generalQuery::mystart(){
         }
     }else cout << "子节点执行subquery未完成" << endl;
     
+    /*
+    {
+		map<size_t, string> slaveName;//参数1：slave节点编号，参数2：slave的ip地址
+		ifstream in("./host");
+		if (!in) {
+			cout << "配置文件打开失败" << endl;
+			exit(0);
+		}
+		size_t id;
+		in >> id;
+		size_t id2;
+		string ip;
+		while (in >> id2 >> ip) {
+			if (id2 > STORE_START_NUM) STORE_COMPUTE_SPLIT = 1;
+			if (id2 == id) continue;
+			else {
+				slaveName[id2] = ip;
+			}
+		}
+		in.close();
+
+		if (STORE_COMPUTE_SPLIT) {
+			for (auto sN : slaveName) {
+				if (sN.first > STORE_START_NUM) {
+					client* cl = new client(sN.second, PORT);
+					cl->createSocket();
+					cl->myConnect();
+					cl->mySend((void*)"closeDB", 8);
+					cl->myclose();
+					cout << "存储节点slave_" << sN.first << "关闭" << endl;
+				}
+			}
+		}
+		else {
+			for (auto sN : slaveName) {
+				client* cl = new client(sN.second, PORT);
+				cl->createSocket();
+				cl->myConnect();
+				cl->mySend((void*)"closeDB", 8);
+				cl->myclose();
+				cout << "存储&计算节点slave_" << sN.first << "关闭" << endl;
+			}
+		}
+    }*/
     
     //命令slave节点开始执行连接计划
 	map<size_t, size_t> receivePlanOk;

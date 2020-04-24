@@ -171,6 +171,7 @@ bool generalQuery::executePlan(){
 
 //循环执行查询计划
 bool generalQuery::recycleEx(size_t index){
+    /*
     //我的循环执行版本
     for (index = plan.size() - 1; index >= 0; index--) {
         if (plan[index].ID == 0) continue;
@@ -259,8 +260,8 @@ bool generalQuery::recycleEx(size_t index){
 			else cout << "得到：" << subID << "失败" << endl;
         }
     }
-
-    /*
+    */
+    
     //周华健的递归执行版本
     if(index >= plan.size() || plan.at(index).ID == 0) return true;
     else{
@@ -465,10 +466,15 @@ bool generalQuery::recycleEx(size_t index){
         //结束
         if(index * 2 + 2 >=  plan.size() || plan.at(index * 2 + 2).ID == 0 || plan.at(index * 2 + 1).ID == 0 || ownedSubQuery.find(plan.at(index * 2 + 2).ID) == ownedSubQuery.end() || ownedSubQuery.find(plan.at(index * 2 + 1).ID) == ownedSubQuery.end()) return false;
 
+        cout << plan.at(index * 2 + 1).ID << "值大小:" << ownedSubQuery[plan.at(index * 2 + 1).ID]->valueVec.size() << endl;
+        cout << plan.at(index * 2 + 2).ID << "值大小:" << ownedSubQuery[plan.at(index * 2 + 2).ID]->valueVec.size() << endl;
+
         //合并操作
         if(plan.at(index).type == 1 && plan.at(index).ID != 0){
-            ownedSubQuery[plan.at(index).ID] = ownedSubQuery[plan.at(index * 2 + 1).ID]-> Union(*(ownedSubQuery[plan.at(index * 2 + 2).ID]), plan.at(index).ID);
-
+            cout << "开始union:" << plan.at(index * 2 + 1).ID << " " << plan.at(index * 2 + 2).ID << " --> " << plan.at(index).ID << endl;
+            queryClass* my = ownedSubQuery[plan.at(index * 2 + 1).ID]->Union(*(ownedSubQuery[plan.at(index * 2 + 2).ID]), plan.at(index).ID);
+            ownedSubQuery[plan.at(index).ID] = my;
+            cout << "union结束:" << plan.at(index * 2 + 1).ID << " " << plan.at(index * 2 + 2).ID << " --> " << plan.at(index).ID << endl;
 			vector<string> A = ownedSubQuery[plan.at(index * 2 + 1).ID]->getValNameVec();
 			vector<string> B = ownedSubQuery[plan.at(index * 2 + 2).ID]->getValNameVec();
 			vector<string> C = ownedSubQuery[plan.at(index).ID]->getValNameVec();
@@ -494,8 +500,10 @@ bool generalQuery::recycleEx(size_t index){
             }
         }//join操作
         else if(plan.at(index).type == 2 && plan.at(index).ID != 0){
-            ownedSubQuery[plan.at(index).ID] = ownedSubQuery[plan.at(index * 2 + 1).ID]->Join(*(ownedSubQuery[plan.at(index * 2 + 2).ID]), plan.at(index).ID);
-
+            cout << "开始join:" << plan.at(index * 2 + 1).ID << " " << plan.at(index * 2 + 2).ID << " --> " << plan.at(index).ID << endl;
+            queryClass* my = ownedSubQuery[plan.at(index * 2 + 1).ID]->Join(*(ownedSubQuery[plan.at(index * 2 + 2).ID]), plan.at(index).ID);
+            ownedSubQuery[plan.at(index).ID] = my;
+            cout << "join结束:" << plan.at(index * 2 + 1).ID << " " << plan.at(index * 2 + 2).ID << " --> " << plan.at(index).ID << endl;
             vector<string> A = ownedSubQuery[plan.at(index * 2 + 1).ID]->getValNameVec();
             vector<string> B = ownedSubQuery[plan.at(index * 2 + 2).ID]->getValNameVec();
             vector<string> C = ownedSubQuery[plan.at(index).ID]->getValNameVec();
@@ -520,7 +528,8 @@ bool generalQuery::recycleEx(size_t index){
 				cout << "生成：" << plan.at(index).ID << "失败" << endl;
 			}
         }
+        cout << plan.at(index).ID << "值大小:" << ownedSubQuery[plan.at(index).ID]->valueVec.size() << endl;
     }
-    */
+    
     return true;
 }

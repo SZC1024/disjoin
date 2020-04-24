@@ -26,6 +26,9 @@ using namespace std;
 #define MAX_VAL_NUM 1024
 class queryClass{
     
+    public:
+        vector<vector<size_t> > valueVec; //值，行列值与变量名对应
+
     private:
         size_t ID;             //子查询类编号
         size_t parentIDLeft;   //左父类编号，默认是0，代表此对象由查询语句创建
@@ -34,7 +37,7 @@ class queryClass{
         vector<string> queryStrVec;    //查询语句数组，
         size_t queryValNum;            //该查询类对象结果集含有多少个变量
         vector<string> valNameVec;     //变量名数组
-        vector<vector<size_t> > valueVec; //值，行列值与变量名对应
+        
     
     public:
         queryClass();   //默认构造函数

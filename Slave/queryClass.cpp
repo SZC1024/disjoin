@@ -7,7 +7,7 @@
 //
 
 #include "queryClass.hpp"
-
+//#define _DEBUG_FOR_SZC_ 1
 //#define MAX_VAL_NUM 1024
 #include<iostream>
 #include<stdlib.h>
@@ -115,7 +115,7 @@ queryClass::queryClass(vector<string> queryVec, vector<string> nameVec, size_t i
         }*/
         
         cout<<"得到了结果"<<endl;
-        cout<<"结果条数："<<result.size()<<endl;
+        
         //处理API查询结果
         if(result.empty() || result.at(0) == -1) return;
         
@@ -123,6 +123,7 @@ queryClass::queryClass(vector<string> queryVec, vector<string> nameVec, size_t i
            vector<size_t> line(it, it + queryValNum);
            valueVec.push_back(line);
         }
+        cout << "结果条数：" << valueVec.size() << endl;
     }
 }
 
@@ -262,16 +263,21 @@ size_t queryClass::findCommonValName(queryClass query, vector<size_t> &A, vector
             }
         }
     }
-    cout << "valNameVec:";
-    for (auto a:valNameVec) {
-        cout << " " << a;
-    }
-    cout << endl;
-    cout << "name1:";
-    for(auto a:name1){
-        cout << " " << a;
-    }
-    cout << endl;
+
+#ifdef _DEBUG_FOR_SZC_
+	cout << "valNameVec:";
+	for (auto a : valNameVec) {
+		cout << " " << a;
+	}
+	cout << endl;
+	cout << "name1:";
+	for (auto a : name1) {
+		cout << " " << a;
+	}
+	cout << endl;
+#endif // _slave_debug_for_szc_
+
+
     //得到合并以后的新name数组，ID小的在前
     /*
      例如Id1: A B；id2: B C
@@ -365,28 +371,41 @@ queryClass* queryClass::Union(queryClass query, size_t id){
 结果集join
 */
 //比较函数
-bool compare(VectorCompare A, VectorCompare B){
+bool compare(VectorCompare A, VectorCompare B){//A小于B
     vector<size_t> aname = A.name;
     vector<size_t> bname = B.name;
 
-    vector<size_t>::iterator aiter = aname.begin();
-    vector<size_t>::iterator biter = bname.begin();
-    for (; !((aiter == aname.end()) || (biter == bname.end())); aiter++, biter++) {
-        if (A.val.at(*aiter) > B.val.at(*biter)) return true;
-        else if (A.val.at(*aiter) < B.val.at(*biter)) return false;
-    }
-    return true;
-    //老的，只能判断同种类型的VectorCompare，当不同类型的VectorCompare时，比如一个两列一个三列就会出现越界
+	vector<size_t>::iterator aiter = aname.begin();
+	vector<size_t>::iterator biter = bname.begin();
+	for (; !((aiter == aname.end()) || (biter == bname.end())); aiter++, biter++) {
+		if (A.val.at(*aiter) < B.val.at(*biter)) return true;
+		else if (A.val.at(*aiter) > B.val.at(*biter)) return false;
+	}
+	return false;//c++sort函数中得等于情况必须返回false
+    
+    //(大于等于)
     //for(size_t i = 0; i < aname.size(); i ++){
-    //    size_t index = aname.at(i);
-    //    if(A.val.at(index) > B.val.at(index)){
+    //    size_t indexA = aname.at(i);
+    //    size_t indexB = bname.at(i);
+    //    if(A.val.at(indexA) > B.val.at(indexB)){
     //        return true;
     //    }
-    //    else if(A.val.at(index) < B.val.at(index)){
+    //    else if(A.val.at(indexA) < B.val.at(indexB)){
     //        return false;
     //    }
     //}
     //return true;
+}
+
+bool equal(VectorCompare A, VectorCompare B){
+	vector<size_t> aname = A.name;
+	vector<size_t> bname = B.name;
+	vector<size_t>::iterator aiter = aname.begin();
+	vector<size_t>::iterator biter = bname.begin();
+	for (; !((aiter == aname.end()) || (biter == bname.end())); aiter++, biter++) {
+		if (A.val.at(*aiter) != B.val.at(*biter)) return false;
+	}
+	return true;
 }
 
 //Join
@@ -424,8 +443,9 @@ queryClass* queryClass::Join(queryClass query, size_t id){
     for(size_t m = 0; m < valueVec.size(); m ++){
         vec1.at(m).val = valueVec.at(m);
     }
-    sort(vec1.begin(), vec1.end(), compare);
-       
+    cout << "sort vec1 ..." << endl;
+    sort(vec1.begin(), vec1.end(), compare);//按照join key列（由vec1中的name指定），从小到大对每行数据排序
+    cout << "sort vec1 end" << endl;
     //第二个查询类排序,query
     VectorCompare temp_2;
     temp_2.name = B;
@@ -433,85 +453,188 @@ queryClass* queryClass::Join(queryClass query, size_t id){
     for(size_t n = 0; n < val.size(); n++){
         vec2.at(n).val = val.at(n);
     }
+    cout << "sort vec2 ..." << endl;
     sort(vec2.begin(), vec2.end(), compare);
+    cout << "sort vec2 end" << endl;
 
+#ifdef _DEBUG_FOR_SZC_
+	cout << ID << " value:" << endl;
+	for (int i = 0; i < vec1.size(); i++) {
+		for (int j = 0; j < vec1[i].val.size(); j++) {
+			cout << vec1[i].val[j] << "  ";
+		}
+		cout << endl;
+	}
+	cout << query.getID() << " value:" << endl;
+	for (int i = 0; i < vec2.size(); i++) {
+		for (int j = 0; j < vec2[i].val.size(); j++) {
+			cout << vec2[i].val[j] << "  ";
+		}
+		cout << endl;
+	}
+#endif // _DEBUG_FOR_SZC_
+    cout << "join ..." << endl;
     //Join
     if(ID < query.getID()){  //this的名字在前
         size_t k = 0;
         size_t l = 0;
         while(k < vec1.size() && l < vec2.size()){
-            if(compare(vec1.at(k), vec2.at(l))){  //A >= B
-              size_t  index1 = A.at(A.size() - 1);  //最后一个变量列
-              size_t  index2 = B.at(B.size() - 1);  //最后一个变量列
-                if(vec1.at(k).val.at(index1) == vec2.at(l).val.at(index2)){ //A==B
-                    size_t start = l;  //第一个相同的位置
-                    size_t end = l + 1;    //最后一个相同的位置后一个,第一个不同的位置
-                    for( ; end < vec2.size(); end++){   //找到vec2中最后一个相同的
-                        if(compare(vec1.at(k), vec2.at(end)) && vec1.at(k).val.at(index1) == vec2.at(end).val.at(index2)){
+            if (!compare(vec1[k], vec2[l])) {//A >= B（B <= A）
+
+#ifdef _DEBUG_FOR_SZC_
+				cout << "小于等于1 : ";
+				for (int t = 0; t < vec1[k].val.size(); t++) {
+					cout << vec1[k].val[t] << "  ";
+				}
+				cout << " --- ";
+				for (int t = 0; t < vec2[l].val.size(); t++) {
+					cout << vec2[l].val[t] << "  ";
+				}
+				cout << endl;
+#endif // _DEBUG_FOR_SZC_
+
+                if (equal(vec1[k], vec2[l])) {
+#ifdef _DEBUG_FOR_SZC_
+					cout << "equal : ";
+					for (int t = 0; t < vec1[k].val.size(); t++) {
+						cout << vec1[k].val[t] << "  ";
+					}
+					cout << " --- ";
+					for (int t = 0; t < vec2[l].val.size(); t++) {
+						cout << vec2[l].val[t] << "  ";
+					}
+					cout << endl;
+#endif // _DEBUG_FOR_SZC_
+					size_t start = l;//第一个相同的位置
+					size_t end = l + 1;//最后一个相同的位置后一个,第一个不同的位置
+					for (; end < vec2.size(); end++) {//找到vec2中最后一个相同的
+                        if (equal(vec1[k], vec2[end])){
+#ifdef _DEBUG_FOR_SZC_
+							cout << "equal : ";
+							for (int t = 0; t < vec1[k].val.size(); t++) {
+								cout << vec1[k].val[t] << "  ";
+							}
+							cout << " --- ";
+							for (int t = 0; t < vec2[end].val.size(); t++) {
+								cout << vec2[end].val[t] << "  ";
+							}
+							cout << endl;
+#endif // _DEBUG_FOR_SZC_
                             continue;
                         }
                         else break;
-                    }
-                    for( ; start < end; start++){ //开始组合
-                        vector<size_t> temp_re(vec1.at(k).val); //A结果列
-                        for(size_t p = 0; p < vec2.at(start).val.size(); p++){ //将B结果列加入
+					}
+                    for (; start < end; start++){//开始组合
+                        vector<size_t> temp_re(vec1[k].val);//A结果列
+                        for (size_t p = 0; p < vec2[start].val.size(); p++){
                             size_t y;
-                            for(y = 0; y < B.size(); y++){  //判断是否是共同变量
-                                if(p == B.at(y)) break;
-                            }
-                            if(y == B.size()){ //不是共同变量
-                                temp_re.push_back(vec2.at(start).val.at(p));
-                            }
+							for (y = 0; y < B.size(); y++) {//判断是否是共同变量
+                                if (B[y] == p) break;
+							}
+							if (y == B.size()) {//不是共同变量
+                                temp_re.push_back(vec2[start].val[p]);
+							}
                         }
-                        valRe.push_back(temp_re); //加入到最终结果
+                        valRe.push_back(temp_re);//加入到最终结果
                     }
+                    k++;
+                }else{
+                    l++;
                 }
+            }else{
                 k++;
             }
-            else{
-                l++;
-            }
         }
-    }
-    else{
+    }else{
         size_t k = 0;
         size_t l = 0;
-        while(k < vec1.size() && l < vec2.size()){
-            if(compare(vec1.at(k), vec2.at(l))){  //A >= B
-              size_t  index1 = A.at(A.size() - 1);  //最后一个变量列
-              size_t  index2 = B.at(B.size() - 1);  //最后一个变量列
-                if(vec1.at(k).val.at(index1) == vec2.at(l).val.at(index2)){ //A==B
-                    size_t start = l;  //第一个相同的位置
-                    size_t end = l + 1;    //最后一个相同的位置后一个,第一个不同的位置
-                    for( ; end < vec2.size(); end++){   //找到vec2中最后一个相同的
-                        if(compare(vec1.at(k), vec2.at(end)) && vec1.at(k).val.at(index1) == vec2.at(end).val.at(index2)){
+        while (k < vec1.size() && l < vec2.size()) {
+            if (!compare(vec1[k], vec2[l])) {//A >= B
+
+#ifdef _DEBUG_FOR_SZC_
+				cout << "小于等于2 : ";
+				for (int t = 0; t < vec1[k].val.size(); t++) {
+					cout << vec1[k].val[t] << "  ";
+				}
+				cout << " --- ";
+				for (int t = 0; t < vec2[l].val.size(); t++) {
+					cout << vec2[l].val[t] << "  ";
+				}
+				cout << endl;
+#endif // _DEBUG_FOR_SZC_
+
+                if (equal(vec1[k], vec2[l])) {//A==B
+#ifdef _DEBUG_FOR_SZC_
+					cout << "equal : ";
+					for (int t = 0; t < vec1[k].val.size(); t++) {
+						cout << vec1[k].val[t] << "  ";
+					}
+					cout << " --- ";
+					for (int t = 0; t < vec2[l].val.size(); t++) {
+						cout << vec2[l].val[t] << "  ";
+					}
+					cout << endl;
+#endif // _DEBUG_FOR_SZC_
+                    size_t start = l;//第一个相同的位置
+                    size_t end = l + 1;//最后一个相同的位置后一个,第一个不同的位置
+                    for (; end < vec2.size(); end++) {//找到vec2中最后一个相同的
+                        if (equal(vec1[k], vec2[end])){
+#ifdef _DEBUG_FOR_SZC_
+							cout << "equal : ";
+							for (int t = 0; t < vec1[k].val.size(); t++) {
+								cout << vec1[k].val[t] << "  ";
+							}
+							cout << " --- ";
+							for (int t = 0; t < vec2[end].val.size(); t++) {
+								cout << vec2[end].val[t] << "  ";
+							}
+							cout << endl;
+#endif // _DEBUG_FOR_SZC_
                             continue;
                         }
                         else break;
                     }
-                    for( ; start < end; start++){ //开始组合
-                        vector<size_t> temp_re(vec2.at(k).val); //B结果列
-                        for(size_t p = 0; p < vec1.at(start).val.size(); p++){ //将A结果列加入
+                    for (; start < end; start++) {//开始组合
+                        vector<size_t> temp_re(vec2[k].val);//B结果列
+                        for (size_t p = 0; p < vec1[start].val.size(); p++) {//将A结果列加入
                             size_t y;
-                            for(y = 0; y < A.size(); y++){  //判断是否是共同变量
-                                if(p == A.at(y)) break;
+                            for (y = 0; y < A.size(); y++) {//判断是否是共同变量
+                                if(p == A[y]) break;
                             }
-                            if(y == A.size()){ //不是共同变量
-                                temp_re.push_back(vec1.at(start).val.at(p));
+                            if(y == A.size()){//不是共同变量
+                                temp_re.push_back(vec1[start].val[p]);
                             }
                         }
-                        valRe.push_back(temp_re); //加入到最终结果
+                        valRe.push_back(temp_re);//加入到最终结果
                     }
+                    k++;
+                }else{
+                    l++;
                 }
+            }else{
                 k++;
-            }
-            else{
-                l++;
             }
         }
     }
+    cout << "join end" << endl;
+    for(auto a:queryStr){
+        queryStrRe.push_back(a);
+    }
+    for(auto a:queryStrVec){
+        queryStrRe.push_back(a);
+    }
 
-    
+#ifdef _DEBUG_FOR_SZC_
+	cout << "join结果: " << ID << " join " << query.getID() << " 得到 " << id << " :" << endl;
+	for (int i = 0; i < valRe.size(); i++) {
+		cout << i + 1 << ":  ";
+		for (int j = 0; j < valRe[i].size(); j++) {
+			cout << valRe[i][j] << "  ";
+		}
+		cout << endl;
+	}
+#endif // _DEBUG_FOR_SZC_
+
     queryClass* re = new queryClass(queryStrRe, nameRe, valRe, id, ID, query.getID(), 2);
     return re;
 }

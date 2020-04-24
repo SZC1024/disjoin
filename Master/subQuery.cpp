@@ -313,7 +313,7 @@ subQuery* subQuery::Join(subQuery query, size_t id){
     vector<string> name = query.getValNameVec();
     vector<string> queryStr = query.getQueryVec();
     size_t count = query.getCount();
-    vector<string> queryReNameVec;
+    //vector<string> queryReNameVec;
 
     //异常返回
     subQuery* errorRe = new subQuery();
@@ -323,7 +323,7 @@ subQuery* subQuery::Join(subQuery query, size_t id){
         return errorRe;
     }
     delete errorRe;
-    //实现join策略
+    //实现join策略（没用）
   //  int flag;
   //  if(ID < id){
   //      flag = 0;
@@ -353,8 +353,7 @@ subQuery* subQuery::Join(subQuery query, size_t id){
     }
     for(auto a:queryStr){
         queryStrRe.push_back(a);
-    }//queryStrRe.swap(queryStr);以前这里是这么写的，感觉错了
-    
+    }
     if(count > resultCount){
         countRe = resultCount;
     }else{
