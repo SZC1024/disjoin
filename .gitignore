@@ -2,7 +2,7 @@
 .vs/
 subData/*
 subQuery/*
-SubQuery/
-SubData/
+SubQuery
+SubData
 bin/lrelease/*
 DataDec/datadec
