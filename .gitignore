@@ -1,6 +1,4 @@
 .vscode/
 .vs/
-subData/*
-subQuery/*
-bin/lrelease/*
+bin/*
 DataDec/datadec
