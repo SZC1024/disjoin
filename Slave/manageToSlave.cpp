@@ -181,6 +181,7 @@ bool manageToSlave::getAndSendData_To_Slave(){
                     serverToSlave->mySend(*it, (void*) str_1.c_str(), str_1.size());
                 }
                 
+                size_t tempnetworkTraffic = networkTraffic;
                 //发送结果值
                 size_t count_value = val_1.size();
                 serverToSlave->mySend(*it, &count_value, sizeof(count_value));
@@ -194,6 +195,7 @@ bool manageToSlave::getAndSendData_To_Slave(){
                     }
                 }
                 cout << id[0] << " " << id[1] << " 发送完毕" << endl;
+                cout << "本次向外发送数据量为" << networkTraffic - tempnetworkTraffic << "字节" << endl;
             }
         FD_ZERO(&rfds);
         }
@@ -396,7 +398,7 @@ bool manageToSlave::getAndSendData_To_Master(){
                         generalQuery* gQuery = umap_Gen_Query[generalQueryId];
                         gQuery->executePlan();
 						cout << "连接计划执行完毕" << endl;
-                        cout << "本节点向外发送数据总量为" << networkTraffic << "字节" << endl;
+                        //cout << "本节点向外发送数据总量为" << networkTraffic << "字节" << endl;
 						vector<vector<size_t> > result;
                         size_t idRe = (gQuery->plan)[0].ID;
 						queryClass* qc = gQuery->getSubQueryClass(idRe);
