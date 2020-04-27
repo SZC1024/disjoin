@@ -757,7 +757,7 @@ if(_debug_for_szc_){
             for (size_t statslaveid = 0; statslaveid < clRef.size(); statslaveid++) {
                 size_t result = 0;
                 for(auto str:queryStr){
-                    result += getResultSize(str, statslaveid);
+                    result += 1;//getResultSize(str, statslaveid);
                 }
                 //partNumToResult[partnum][statslaveid + 1] = result;
                 plan_slave_num* p = new plan_slave_num;

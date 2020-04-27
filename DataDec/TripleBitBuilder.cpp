@@ -248,13 +248,13 @@ Status TripleBitBuilder::resolveTriples(TempFile &rawFacts, int slaveID) {
 			}
 			
 			if (subjectID != lastSubject) {
-				((OneConstantStatisticsBuffer *) statBuffer[slaveID][0])->addStatis(lastSubject, count0);
-				statBuffer[slaveID][2]->addStatis(lastSubject, lastPredicate, count1);
+				//((OneConstantStatisticsBuffer *) statBuffer[slaveID][0])->addStatis(lastSubject, count0);
+				//statBuffer[slaveID][2]->addStatis(lastSubject, lastPredicate, count1);
 				lastPredicate = predicateID;
 				lastSubject = subjectID;
 				count0 = count1 = 1;
 			} else if (predicateID != lastPredicate) {
-				statBuffer[slaveID][2]->addStatis(lastSubject, lastPredicate, count1);
+				//statBuffer[slaveID][2]->addStatis(lastSubject, lastPredicate, count1);
 				lastPredicate = predicateID;
 				count0++;
 				count1 = 1;
@@ -301,13 +301,13 @@ Status TripleBitBuilder::resolveTriples(TempFile &rawFacts, int slaveID) {
 			}
 			
 			if (objectID != lastObject) {
-				((OneConstantStatisticsBuffer *) statBuffer[slaveID][1])->addStatis(lastObject, count0);
-				statBuffer[slaveID][3]->addStatis(lastObject, lastPredicate, count1);
+				//((OneConstantStatisticsBuffer *) statBuffer[slaveID][1])->addStatis(lastObject, count0);
+				//statBuffer[slaveID][3]->addStatis(lastObject, lastPredicate, count1);
 				lastPredicate = predicateID;
 				lastObject = objectID;
 				count0 = count1 = 1;
 			} else if (predicateID != lastPredicate) {
-				statBuffer[slaveID][3]->addStatis(lastObject, lastPredicate, count1);
+				//statBuffer[slaveID][3]->addStatis(lastObject, lastPredicate, count1);
 				lastPredicate = predicateID;
 				count0++;
 				count1 = 1;

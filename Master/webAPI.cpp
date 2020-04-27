@@ -111,8 +111,8 @@ bool create(){
 		}
     }
 
-    cout << "load table and statistic" << endl;
-    loadTableAndStatistic("./subData");
+    //cout << "load table and statistic" << endl;
+    //loadTableAndStatistic("./subData");
     return true;
 }
 
