@@ -248,13 +248,13 @@ Status TripleBitBuilder::resolveTriples(TempFile &rawFacts, int slaveID) {
 			}
 			
 			if (subjectID != lastSubject) {
-				//((OneConstantStatisticsBuffer *) statBuffer[slaveID][0])->addStatis(lastSubject, count0);
-				//statBuffer[slaveID][2]->addStatis(lastSubject, lastPredicate, count1);
+				((OneConstantStatisticsBuffer *) statBuffer[slaveID][0])->addStatis(lastSubject, count0);
+				statBuffer[slaveID][2]->addStatis(lastSubject, lastPredicate, count1);
 				lastPredicate = predicateID;
 				lastSubject = subjectID;
 				count0 = count1 = 1;
 			} else if (predicateID != lastPredicate) {
-				//statBuffer[slaveID][2]->addStatis(lastSubject, lastPredicate, count1);
+				statBuffer[slaveID][2]->addStatis(lastSubject, lastPredicate, count1);
 				lastPredicate = predicateID;
 				count0++;
 				count1 = 1;
@@ -269,6 +269,8 @@ Status TripleBitBuilder::resolveTriples(TempFile &rawFacts, int slaveID) {
 			// 0 indicate the triple is sorted by subjects' id;
 			// bitmap->insertTriple(predicateID, subjectID, objectID, v, 0);
 		}
+		((OneConstantStatisticsBuffer*)statBuffer[0])->addStatis(lastSubject, count0);
+		((TwoConstantStatisticsBuffer*)statBuffer[2])->addStatis(lastSubject, lastPredicate, count1);
 		mappedIn.close();
 	}
 	
@@ -301,13 +303,13 @@ Status TripleBitBuilder::resolveTriples(TempFile &rawFacts, int slaveID) {
 			}
 			
 			if (objectID != lastObject) {
-				//((OneConstantStatisticsBuffer *) statBuffer[slaveID][1])->addStatis(lastObject, count0);
-				//statBuffer[slaveID][3]->addStatis(lastObject, lastPredicate, count1);
+				((OneConstantStatisticsBuffer *) statBuffer[slaveID][1])->addStatis(lastObject, count0);
+				statBuffer[slaveID][3]->addStatis(lastObject, lastPredicate, count1);
 				lastPredicate = predicateID;
 				lastObject = objectID;
 				count0 = count1 = 1;
 			} else if (predicateID != lastPredicate) {
-				//statBuffer[slaveID][3]->addStatis(lastObject, lastPredicate, count1);
+				statBuffer[slaveID][3]->addStatis(lastObject, lastPredicate, count1);
 				lastPredicate = predicateID;
 				count0++;
 				count1 = 1;
@@ -321,6 +323,8 @@ Status TripleBitBuilder::resolveTriples(TempFile &rawFacts, int slaveID) {
 			// 1 indicate the triple is sorted by objects' id;
 			//bitmap->insertTriple(predicateID, objectID, subjectID, v, 1);
 		}
+		((OneConstantStatisticsBuffer*)statBuffer[1])->addStatis(lastObject, count0);
+		((TwoConstantStatisticsBuffer*)statBuffer[3])->addStatis(lastObject, lastPredicate, count1);
 		mappedIn.close();
 	}
 	
