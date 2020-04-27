@@ -15,8 +15,9 @@ generalQuery::generalQuery(){
 }
 
 //根据ID和str创建查询
-generalQuery::generalQuery(size_t id, string str){
+generalQuery::generalQuery(size_t id, string str, int manualSplitQuery){
     cout<<"查询类ID："<<id<<endl;
+    this->manualSplitQuery = manualSplitQuery;
     ID = id;
     queryStr =str;
     MaxSubID = 1;
@@ -186,8 +187,12 @@ bool generalQuery::queryComposeToVec(const char* querySen){
     ofstream out(temp.c_str());//创建写入文件流out
     out<<querySen<<endl;//将查询语句输入
     out.close();
-    
-    string queryName = queryDecomposeFile(queryFile);//查询文件的分解
+    string queryName;
+    if(!manualSplitQuery){
+        queryName = queryDecomposeFile(queryFile);//查询文件的分解
+    }else{
+        queryName = queryFile;
+    }
     readAllQuery(queryName);//得到子查询语句数组
     return true;
 }

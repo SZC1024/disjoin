@@ -65,12 +65,29 @@ bool client::mySend(void* buffer, size_t size){
 
 //接收数据
 bool client::myRec(void *buffer){
-    
-    size_t size;
+    size_t size=0;
     int err;
     size_t index = 0;
+    char head[1];
     
-    err = recv(socketID, &size, sizeof(size), 0);
+    size = 1;
+    while(size){
+        err = recv(socketID, head + index, size, 0);
+		if (err == -1) break;
+		else if (err == 0) break;
+		size -= err;
+		index += err;
+    }
+    size = head[0];
+    char* zhong = new char[size];
+    index = 0;
+    while(size){
+        err = recv(socketID, zhong + index, size, 0);
+		if (err == -1) break;
+		else if (err == 0) break;
+		size -= err;
+		index += err;
+    }
     //memset(buffer, 0, size);
     //cout<<"接受串长度："<<err<<endl;
     if(err <= 0){
@@ -79,6 +96,9 @@ bool client::myRec(void *buffer){
         exit(0);
         return false;
     }
+    index = 0;
+
+    size = *(size_t*)zhong;
     while(size){
         err = recv(socketID, (char*)buffer + index, size, 0);
         if(err == -1) break;

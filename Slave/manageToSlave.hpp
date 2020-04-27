@@ -35,6 +35,7 @@ using namespace std;
 class manageToSlave{
 private:
     size_t ID; //本机编号
+    size_t networkTraffic;//表示该节点所有发送出去的数据量（slave to slave），仅统计了重要数据，元数据没有统计
     server* serverToSlave;  //对slave节点之间通信的服务器
     serverSlave* serverToMaster;  //slave和MAster节点的服务器
     unordered_map<size_t, generalQuery*> umap_Gen_Query; //查询类映射

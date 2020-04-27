@@ -78,6 +78,7 @@ void serverSlave::getConn(){
         connList.push_back(conn);
         pthread_rwlock_unlock(&rwlock);
         cout<<"对master新加入一个链接："<<conn<<endl;
+        //usleep(100000);
     }
 }
 

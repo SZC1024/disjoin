@@ -33,7 +33,7 @@ private:
 public:
     static size_t queryId;
     manageToMaster();
-    size_t addQuery(string str);
+    size_t addQuery(string str, int manualSplitQuery);
     bool removeQuery(size_t id1);
     unordered_map<size_t, string> getIpRef();
     size_t getID() const;

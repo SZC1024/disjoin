@@ -27,6 +27,7 @@ using namespace std;
 class PlanTree;
 class generalQuery{
 private:
+    int manualSplitQuery = 0;//代表查询预分解
     size_t ID;    //查询ID
     unordered_map<size_t, partitionToSub* > partSub; //分区映射（从1开始，+1递增）
     unordered_map<size_t, size_t> globalIDRef; //全局ID映射表,前者代表ID，后者代表节点
@@ -48,7 +49,7 @@ private:
     
 public:
     generalQuery();
-    generalQuery(size_t id, string str);  //生成查询类
+    generalQuery(size_t id, string str, int manualSplitQuery);  //生成查询类
     bool decomposeQueryAll();  //查询语句的分解
     bool createParition();   //创建paritition
     bool createPlan();     //创建查询计划

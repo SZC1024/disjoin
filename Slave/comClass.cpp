@@ -74,6 +74,7 @@ void server::getConn(){
         connList.push_back(conn);
         pthread_rwlock_unlock(&rwlock_slave);
         cout<<"对slave新加入一个链接："<<conn<<endl;
+        //usleep(100000);
     }
 }
 
@@ -85,7 +86,7 @@ bool server::myRec(int conn, void *buffer){
     size_t index = 0;
     
     err = recv(conn, &size, sizeof(index), 0);
-    //memset(buffer, 0, size);
+    memset(buffer, 0, size);
     //cout<<"接受串长度1："<<size<<endl;
     if(err <= 0){
         if(ereaConnList(conn)){
@@ -107,8 +108,11 @@ bool server::myRec(int conn, void *buffer){
 
 //发送数据
 bool server::mySend(int conn, void* buffer, size_t size){
-    
     int err;
+
+    int head = sizeof(size);
+    err = send(conn, &head, 1, 0);//先发送1个字节表示变量size的字节数
+
     size_t index = 0;
     index = size;
     err = send(conn, &index, sizeof(index), 0);

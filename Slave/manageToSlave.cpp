@@ -9,7 +9,7 @@
 #include "manageToSlave.hpp"
 
 manageToSlave::manageToSlave(){
-    
+    networkTraffic = 0;
     //读取host配置文件
     ifstream in("./host");
     in>>ID;
@@ -26,7 +26,7 @@ manageToSlave::manageToSlave(){
 
 //管理
 manageToSlave::manageToSlave(size_t id){
-    
+    networkTraffic = 0;
     ID = id;
     serverToSlave = new server();   //对slave节点通信
     serverToMaster = new serverSlave();  //对master节点通信
@@ -96,8 +96,9 @@ void manageToSlave::myStartToSlave(){
     pthread_create(&thget, nullptr, serverGetData_Slave, (void*) this);
     pthread_detach(thget);
     
-    //循环不让主线城结束
+    //循环不让线城结束
     while(1){
+        usleep(1000000);
     }
 }
 
@@ -189,12 +190,14 @@ bool manageToSlave::getAndSendData_To_Slave(){
                     for(size_t s = 0; s<count_d; s++){
                         size_t re = val_1[f].at(s);
                         serverToSlave->mySend(*it, &re, sizeof(re));
+                        networkTraffic += sizeof(re);
                     }
                 }
                 cout << id[0] << " " << id[1] << " 发送完毕" << endl;
             }
         FD_ZERO(&rfds);
         }
+        usleep(100000);
     }
     return true;
 }
@@ -338,7 +341,7 @@ bool manageToSlave::getAndSendData_To_Master(){
                     int type_1;
                     
                     serverToMaster->myRec(*it, &id1);
-                    serverToSlave->myRec(*it, &countP);
+                    serverToMaster->myRec(*it, &countP);
                     for(size_t m = 0; m < countP; m++){ //接收查询计划
                         serverToMaster->myRec(*it, &id_1);
                         serverToMaster->myRec(*it, &type_1);
@@ -393,6 +396,7 @@ bool manageToSlave::getAndSendData_To_Master(){
                         generalQuery* gQuery = umap_Gen_Query[generalQueryId];
                         gQuery->executePlan();
 						cout << "连接计划执行完毕" << endl;
+                        cout << "本节点向外发送数据总量为" << networkTraffic << "字节" << endl;
 						vector<vector<size_t> > result;
                         size_t idRe = (gQuery->plan)[0].ID;
 						queryClass* qc = gQuery->getSubQueryClass(idRe);
@@ -457,6 +461,7 @@ bool manageToSlave::getAndSendData_To_Master(){
             }
         FD_ZERO(&rfds);
         }
+        usleep(100000);
     }
     return true;
 }
@@ -475,7 +480,9 @@ void manageToSlave::myStartToMaster(){
     //收发数据线程
     pthread_create(&thget, nullptr, serverGetData_Master, (void*)this);
     pthread_detach(thget);
-    while(1){}
+    while(1){
+        usleep(1000000);
+    }
 }
 
 bool manageToSlave::removeQuery(size_t id){
@@ -549,12 +556,12 @@ queryClass* manageToSlave::getSubQuery(size_t id1, size_t id2){
                     queryClass* temp2 = temp->getSubQueryClass(id2);
                     if (temp2->getID() == 0) {
                         delete temp2;
-                        cout << "总查询" << id1 << "中的子查询" << id2 << "属于该节点但还未完成，等待1s" << endl;
+                        cout << "总查询" << id1 << "中的子查询" << id2 << "属于该节点但还未完成，等待0.1s" << endl;
                     }
                     else {
                         return temp2;
                     }
-                    usleep(1000000);
+                    usleep(100000);
                 }
             }
             else{

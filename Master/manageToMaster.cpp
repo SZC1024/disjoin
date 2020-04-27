@@ -25,13 +25,13 @@ manageToMaster::manageToMaster(){
     }
 }
 
-size_t manageToMaster:: addQuery(string str){
-    cout<<"查询ID   ：              "<<queryId<<endl;  
+size_t manageToMaster:: addQuery(string str,int manualSplitQuery){
+    cout<<"查询ID : "<<queryId<<endl;  
     size_t qu = queryId;
-    generalQuery* query = new generalQuery(qu, str);
+    generalQuery* query = new generalQuery(qu, str,manualSplitQuery);
     
     queryRef[queryId] = query;
-     queryId ++;
+    queryId ++;
     return queryId - 1;
 }
 

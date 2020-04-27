@@ -10,11 +10,11 @@
 
 manageToMaster* manage;
 
-const char *queryToWeb(char *querySen){
+const char *queryToWeb(char *querySen, int manualSplitQuery){
     const char *result;
     vector<vector<size_t> > reVec;
     string str(querySen);
-    size_t id = manage->addQuery(str);
+    size_t id = manage->addQuery(str,manualSplitQuery);
     reVec = manage->exeuteQuery(id);
     
     //cout<<"原始数据结果前十条:"<<endl;

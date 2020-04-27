@@ -27,7 +27,7 @@ extern manageToMaster* manage;
 
 extern "C"{
 //查询语句返回
-const char *queryToWeb(char *querySen);
+const char *queryToWeb(char *querySen, int manualSplitQuery);
 
 //开启服务器，加载数据库，加载索引信息
 bool create();
