@@ -21,7 +21,7 @@ const char *queryToWeb(char *querySen, int manualSplitQuery){
     cout << "result:" << endl;
     for(size_t i = 0; i < reVec.size(); i++){
         
-        //if(i > 10) break;
+        if(i > 10) break;
         for(size_t j = 0; j < reVec[i].size(); j++){
             cout<<reVec[i].at(j)<<"\t";
         }
