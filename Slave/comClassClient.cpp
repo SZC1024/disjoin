@@ -45,7 +45,7 @@ bool client::mySend(void* buffer, size_t size){
     int err;
     size_t index;
     index = size;
-    err = send(socketID, &index, sizeof(size_t), 0);
+    err = send(socketID, &index, 1, 0);
    // cout<<"发送串长度："<<err<<endl;
     index = 0;
     while (size) {

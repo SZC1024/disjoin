@@ -130,7 +130,7 @@ queryClass*  generalQuery::getSubQueryClass(size_t id){
         return it->second;
     }
     else{
-        cout<<"当前获取不到此id对应的子查询"<<endl;
+        //cout<<"当前获取不到此id对应的子查询"<<endl;
         queryClass* errorRe = new queryClass();
         return errorRe;
     }
@@ -167,6 +167,22 @@ bool generalQuery::executePlan(){
     cout<<"循环执行查询计划"<<endl;
     recycleEx(0);
     return true;
+}
+
+struct genQuery{
+    generalQuery* generalq;
+    size_t index;
+    genQuery(generalQuery* gen, size_t ind){
+        generalq = gen;
+        index = ind;
+    }
+};
+
+//由于pthread不能传递成员函数，故创建此函数
+void* executeRecycle(void* genquery) {
+    genQuery* temp = static_cast<genQuery*>(genquery);
+    temp->generalq->recycleEx(temp->index);
+    return 0;
 }
 
 //循环执行查询计划
@@ -265,9 +281,36 @@ bool generalQuery::recycleEx(size_t index){
     //周华健的递归执行版本
     if(index >= plan.size() || plan.at(index).ID == 0) return true;
     else{
-        recycleEx(index * 2 + 1);
-        recycleEx(index * 2 + 2);
-        
+		pthread_t threadleft;
+        pthread_t threadright;
+        genQuery* left = new genQuery(this, index * 2 + 1);
+        genQuery* right = new genQuery(this, index * 2 + 2);
+		pthread_create(&threadleft, nullptr, executeRecycle, left);
+		pthread_detach(threadleft);
+		pthread_create(&threadright, nullptr, executeRecycle, right);
+		pthread_detach(threadright);
+
+        //recycleEx(index * 2 + 1);
+        //recycleEx(index * 2 + 2);
+        if (index * 2 + 1 < plan.size()){
+            auto leftnode = globalSubQueryID.find(plan.at(index * 2 + 1).ID);
+            if ((leftnode != globalSubQueryID.end()) && (leftnode->second == myNodeId)){
+                while (ownedSubQuery.find(plan.at(index * 2 + 1).ID) == ownedSubQuery.end()) {
+                    cout << "子查询" << plan.at(index * 2 + 1).ID << "属于本节点，但还未算出，等待0.1秒" << endl;
+                    usleep(100000);//所需子查询属于本节点，只不过还未计算出
+                }
+            }
+        }
+        if(index * 2 + 2 < plan.size()){
+            auto rightnode = globalSubQueryID.find(plan.at(index * 2 + 2).ID);
+		    if ((rightnode != globalSubQueryID.end()) && (rightnode->second == myNodeId)) {
+			    while (ownedSubQuery.find(plan.at(index * 2 + 2).ID) == ownedSubQuery.end()) {
+                    cout << "子查询" << plan.at(index * 2 + 2).ID << "属于本节点，但还未算出，等待0.1秒" << endl;
+				    usleep(100000);//所需子查询属于本节点，只不过还未计算出
+			    }
+		    }
+        }
+
         //获取数据
         if(index * 2 + 1 < plan.size() && ownedSubQuery.find(plan.at(index * 2 + 1).ID) == ownedSubQuery.end() && plan.at(index * 2 + 1).ID != 0){
             
@@ -287,7 +330,12 @@ bool generalQuery::recycleEx(size_t index){
                 cout<<"节点的客户端映射不存在："<<nodenum<<endl;
                 exit(0);
             }
-            client* cl = it_client->second;
+            //每一次用都自己建一个socket试试
+            client* cl= new client(serverIPRef[nodenum], PORT_SLAVE);
+            cl->createSocket();
+            cl->myConnect();
+            //client* cl = it_client->second;
+
             cout << "没有的ID：" << idV[1] << " 向" << nodenum << "发送请求" << endl;
             //发送请求
             cl->mySend(idV, sizeof(idV));//发送格式ID ID，前者为查询类ID，后者为子查询ID
@@ -354,7 +402,7 @@ bool generalQuery::recycleEx(size_t index){
                 }
                 val_1.push_back(re_1);
             }
-            
+            cl->myclose();
             ownedSubQuery[subID] = new queryClass(strVec, name_1, val_1, subID, id_l, id_r, type_1);
             
             if(ownedSubQuery[subID] != nullptr){
@@ -391,10 +439,13 @@ bool generalQuery::recycleEx(size_t index){
                 cout<<"节点的客户端映射不存在:"<<nodenum<<endl;
                 exit(0);
             }
-            client* cl = it_client->second;
-            
+
+			client* cl = new client(serverIPRef[nodenum], PORT_SLAVE);
+			cl->createSocket();
+			cl->myConnect();
+            //client* cl = it_client->second;
+
             cout<<"没有的ID："<<idV[1]<<" 向"<<nodenum<<"发送请求"<<endl;
-            
             //发送请求
             cl->mySend(idV, sizeof(idV));//发送格式ID ID，前者为查询类ID，后者为子查询ID
             cout << "发送请求结束" << endl;
@@ -453,6 +504,7 @@ bool generalQuery::recycleEx(size_t index){
                 }
                 val_1.push_back(re_1);
             }
+            cl->myclose();
             ownedSubQuery[subID] =  new queryClass(strVec, name_1, val_1, subID, id_l, id_r, type_1);
             
             if(ownedSubQuery[subID] != nullptr){
@@ -533,3 +585,4 @@ bool generalQuery::recycleEx(size_t index){
     
     return true;
 }
+

@@ -84,8 +84,18 @@ bool server::myRec(int conn, void *buffer){
     size_t size;
     int err;
     size_t index = 0;
-    
-    err = recv(conn, &size, sizeof(index), 0);
+    char head[1];
+    size = 1;
+    while(size){
+		err = recv(conn, head + index, size, 0);
+		if (err == -1) break;
+		else if (err == 0) break;
+		size -= err;
+		index += err;
+    }
+    size = head[0];
+    index = 0;
+    cout << "size = " << size << endl;
     memset(buffer, 0, size);
     //cout<<"接受串长度1："<<size<<endl;
     if(err <= 0){

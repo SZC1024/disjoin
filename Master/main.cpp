@@ -23,7 +23,10 @@ double get_wall_time_main(){
 int main(int argc, const char * argv[]) {
 	int manualSplitQuery = 0;
     const char* re;
+	double createstart = get_wall_time_main();
     create();
+	double createend = get_wall_time_main();
+	cout << "load数据库库耗费的时间:" << createend - createstart << "秒" << endl;
 	int i = 1;
     while(1){
 		string Dir = "./Query/";

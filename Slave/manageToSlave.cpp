@@ -142,6 +142,7 @@ bool manageToSlave::getAndSendData_To_Slave(){
                 queryClass* temp = getSubQuery(id[0], id[1]);
                 if(temp == nullptr || temp->getID() == 0) {
                     cout<<"当前查询ID不存在，ID1"<<id[0]<<" "<<id[1]<<endl; 
+                    continue;
                 }
                 size_t id_1 = temp->getID();   //ID
                 size_t idL = temp->getParentLeft(); //父左ID
@@ -546,7 +547,7 @@ queryClass* manageToSlave::getSubQuery(size_t id1, size_t id2){
     it = umap_Gen_Query.find(id1);
     if(it == umap_Gen_Query.end()){
         cout<<"请求的查询不存在"<<endl;
-        exit(0);
+        //exit(0);
     }
     else{
         generalQuery* temp= umap_Gen_Query[id1];

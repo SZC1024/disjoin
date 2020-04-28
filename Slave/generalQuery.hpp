@@ -17,8 +17,10 @@
 #include<iostream>
 #include<stdlib.h>
 #include<vector>
+#include<unistd.h>
 #include<unordered_map>
 #include<unordered_set>
+# include <pthread.h>
 #include<algorithm>
 #include<string.h>
 #include<fstream>
