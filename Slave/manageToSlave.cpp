@@ -102,6 +102,84 @@ void manageToSlave::myStartToSlave(){
     }
 }
 
+struct manageSend{
+    manageToSlave* managetoslave;
+    int it;
+    size_t id[2];
+    manageSend(manageToSlave* manTS,int i,size_t* j){
+        managetoslave = manTS;
+        it = i;
+        id[0] = j[0];
+        id[1] = j[1];
+    }
+};
+
+bool manageToSlave::threadSendDataToSlave(int it, size_t* id){
+	queryClass* temp = getSubQuery(id[0], id[1]);
+	if (temp == nullptr || temp->getID() == 0) {
+		//cout<<"当前查询ID不存在，ID "<<id[0]<<" "<<id[1]<<endl; 
+		return false;
+	}
+	cout << "收到的ID请求" << id[0] << " " << id[1] << endl;
+	size_t id_1 = temp->getID();   //ID
+	size_t idL = temp->getParentLeft(); //父左ID
+	size_t idR = temp->getpParentRight();  //父右ID
+	int type_1 = temp->getType();    //类型
+	vector<string> queryStr_1 = temp->getQueryVec();
+	vector<string> name_1 = temp->getValNameVec();
+	vector<vector<size_t> > val_1 = temp->getValueVec();
+	//发送数据
+	//格式
+	//查询类ID 子查询ID 父左ID 父右ID 类型
+	//查询语句个数 查询语句1 查询语句2
+	//结果变量个数 变量1 变量2
+	//结果条数
+	//每条结果有多少个变量
+	//结果变量1 结果变量2
+	serverToSlave->mySend(it, &id[0], sizeof(size_t));
+	serverToSlave->mySend(it, &id_1, sizeof(size_t));
+	serverToSlave->mySend(it, &idL, sizeof(size_t));
+	serverToSlave->mySend(it, &idR, sizeof(size_t));
+	serverToSlave->mySend(it, &type_1, sizeof(int));
+	//发送查询语句
+	size_t count_qu = queryStr_1.size();
+	serverToSlave->mySend(it, &count_qu, sizeof(count_qu));
+	for (size_t m = 0; m < count_qu; m++) {
+		string str_1 = queryStr_1.at(m);
+		serverToSlave->mySend(it, (void*)str_1.c_str(), str_1.size());
+	}
+	//发送查询变量
+	size_t count_val = name_1.size();
+	serverToSlave->mySend(it, &count_val, sizeof(size_t));
+	for (size_t g = 0; g < count_val; g++) {
+		string str_1 = name_1.at(g);
+		serverToSlave->mySend(it, (void*)str_1.c_str(), str_1.size());
+	}
+	size_t tempnetworkTraffic = networkTraffic;
+	//发送结果值
+	size_t count_value = val_1.size();
+	serverToSlave->mySend(it, &count_value, sizeof(count_value));
+	for (size_t f = 0; f < count_value; f++) {
+		size_t count_d = val_1[f].size();
+		serverToSlave->mySend(it, &count_d, sizeof(count_d));
+		for (size_t s = 0; s < count_d; s++) {
+			size_t re = val_1[f].at(s);
+			serverToSlave->mySend(it, &re, sizeof(re));
+			networkTraffic += sizeof(re);
+		}
+	}
+	cout << id[0] << " " << id[1] << " 发送完毕" << endl;
+	cout << "本次向外发送数据量为" << networkTraffic - tempnetworkTraffic << "字节" << endl;
+    return true;
+}
+
+//由于pthread不能传递成员函数，故创建此函数
+void* sendResult(void* managesend) {
+	manageSend* temp = static_cast<manageSend*>(managesend);
+	temp->managetoslave->threadSendDataToSlave(temp->it,temp->id);
+	return 0;
+}
+
 //slave to slave服务器接收数据
 bool manageToSlave::getAndSendData_To_Slave(){
     
@@ -134,16 +212,22 @@ bool manageToSlave::getAndSendData_To_Slave(){
 		            continue;
 	        	}
                 size_t id[2] = {0};
-                cout<<"收到数据请求前"<<endl;
+                //cout<<"收到数据请求前"<<endl;
                 serverToSlave->myRec(*it, id);
-                cout<<"收到数据请求后"<<endl;
+                //cout<<"收到数据请求后"<<endl;
                 //此部分根据ID：ID发送数据
-                cout<<"收到的ID请求"<<id[0]<<" "<<id[1]<<endl;
+
+                pthread_t threadsend;
+                manageSend* managesend = new manageSend(this, *it, id);
+				pthread_create(&threadsend, nullptr, sendResult, managesend);
+				pthread_detach(threadsend);
+                /*
                 queryClass* temp = getSubQuery(id[0], id[1]);
                 if(temp == nullptr || temp->getID() == 0) {
-                    cout<<"当前查询ID不存在，ID1"<<id[0]<<" "<<id[1]<<endl; 
+                    //cout<<"当前查询ID不存在，ID "<<id[0]<<" "<<id[1]<<endl; 
                     continue;
                 }
+                cout<<"收到的ID请求"<<id[0]<<" "<<id[1]<<endl;
                 size_t id_1 = temp->getID();   //ID
                 size_t idL = temp->getParentLeft(); //父左ID
                 size_t idR = temp->getpParentRight();  //父右ID
@@ -197,6 +281,7 @@ bool manageToSlave::getAndSendData_To_Slave(){
                 }
                 cout << id[0] << " " << id[1] << " 发送完毕" << endl;
                 cout << "本次向外发送数据量为" << networkTraffic - tempnetworkTraffic << "字节" << endl;
+                */
             }
         FD_ZERO(&rfds);
         }
@@ -546,7 +631,7 @@ queryClass* manageToSlave::getSubQuery(size_t id1, size_t id2){
     unordered_map<size_t, generalQuery* >::iterator it;
     it = umap_Gen_Query.find(id1);
     if(it == umap_Gen_Query.end()){
-        cout<<"请求的查询不存在"<<endl;
+        //cout<<"请求的查询不存在"<<endl;
         //exit(0);
     }
     else{
@@ -559,12 +644,12 @@ queryClass* manageToSlave::getSubQuery(size_t id1, size_t id2){
                     queryClass* temp2 = temp->getSubQueryClass(id2);
                     if (temp2->getID() == 0) {
                         delete temp2;
-                        cout << "总查询" << id1 << "中的子查询" << id2 << "属于该节点但还未完成，等待0.1s" << endl;
+                        //cout << "总查询" << id1 << "中的子查询" << id2 << "属于该节点但还未完成，等待1s" << endl;
                     }
                     else {
                         return temp2;
                     }
-                    usleep(100000);
+                    usleep(1000000);
                 }
             }
             else{

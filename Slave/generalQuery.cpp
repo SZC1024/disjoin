@@ -296,8 +296,8 @@ bool generalQuery::recycleEx(size_t index){
             auto leftnode = globalSubQueryID.find(plan.at(index * 2 + 1).ID);
             if ((leftnode != globalSubQueryID.end()) && (leftnode->second == myNodeId)){
                 while (ownedSubQuery.find(plan.at(index * 2 + 1).ID) == ownedSubQuery.end()) {
-                    cout << "子查询" << plan.at(index * 2 + 1).ID << "属于本节点，但还未算出，等待0.1秒" << endl;
-                    usleep(100000);//所需子查询属于本节点，只不过还未计算出
+                    //cout << "子查询" << plan.at(index * 2 + 1).ID << "属于本节点，但还未算出，等待1秒" << endl;
+                    usleep(1000000);//所需子查询属于本节点，只不过还未计算出
                 }
             }
         }
@@ -305,8 +305,8 @@ bool generalQuery::recycleEx(size_t index){
             auto rightnode = globalSubQueryID.find(plan.at(index * 2 + 2).ID);
 		    if ((rightnode != globalSubQueryID.end()) && (rightnode->second == myNodeId)) {
 			    while (ownedSubQuery.find(plan.at(index * 2 + 2).ID) == ownedSubQuery.end()) {
-                    cout << "子查询" << plan.at(index * 2 + 2).ID << "属于本节点，但还未算出，等待0.1秒" << endl;
-				    usleep(100000);//所需子查询属于本节点，只不过还未计算出
+                    //cout << "子查询" << plan.at(index * 2 + 2).ID << "属于本节点，但还未算出，等待1秒" << endl;
+				    usleep(1000000);//所需子查询属于本节点，只不过还未计算出
 			    }
 		    }
         }
@@ -359,11 +359,11 @@ bool generalQuery::recycleEx(size_t index){
             cl->myRec(&type_1);
             
             //输出调试
-            cout<<"查询ID："<< quID <<endl;
-            cout<<"子查询ID: "<<subID<<endl;
-            cout<<"左查询ID："<<id_l<<endl;
-            cout<<"右查询ID："<<id_r<<endl;
-            cout<<"类型："<< type_1 <<endl;
+            // cout<<"查询ID："<< quID <<endl;
+            // cout<<"子查询ID: "<<subID<<endl;
+            // cout<<"左查询ID："<<id_l<<endl;
+            // cout<<"右查询ID："<<id_r<<endl;
+            // cout<<"类型："<< type_1 <<endl;
             
             //接受查询语句
             size_t count_qu;

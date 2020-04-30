@@ -54,6 +54,7 @@ public:
     bool addIPref(size_t num, string ip);  //增加节点
     unordered_map<size_t, string> getIPref() const;  //得到IP映射
     size_t getID() const;  //返回本机编号
+    bool threadSendDataToSlave(int it, size_t* id);//多线程发送
     bool getAndSendData_To_Slave();   //slave对slave节点之间的收发数据
     bool getAndSendData_To_Master();  //slave对master节点服务器的收发数据
     bool removeQuery(size_t id);  //根据ID删除一个查询

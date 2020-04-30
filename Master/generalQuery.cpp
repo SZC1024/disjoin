@@ -1,6 +1,6 @@
 #include "generalQuery.hpp"
 
-const int _debug_for_szc_ = 1 ;
+const int _debug_for_szc_ = 0 ;
 
 double get_wall_time() {
 	struct timeval time;
@@ -112,16 +112,20 @@ bool generalQuery:: readAllQuery(string& fileName){    //fileName为查询文件
 			vec.push_back(str);
         }
         
-        //输出调试
-        cout<<"子查询语句变量："<<vec.size()<<endl;
-        for(auto it = vec.begin(); it != vec.end(); it++){
-            cout<<*it<<" ";
-        }
-        cout << endl;
+if(_debug_for_szc_){
+    //输出调试
+    cout<<"子查询语句变量："<<vec.size()<<endl;
+    for(auto it = vec.begin(); it != vec.end(); it++){
+        cout<<*it<<" ";
+    }
+    cout << endl;
+}
+
 
         //赋值
         subStrValName.push_back(vec);
     }
+if(_debug_for_szc_){
     for(auto i:subStrValName){//调试一下
         cout << "subStrValName:";
         for(auto j:i){
@@ -129,6 +133,7 @@ bool generalQuery:: readAllQuery(string& fileName){    //fileName为查询文件
         }
         cout << endl;
     }
+}
     cout<<"子查询个数: "<<subStrValName.size()<<endl;
     while(getline(in, temp)){
         if(temp == "---"){       //关闭旧写入对象，创建新写入对象
@@ -201,8 +206,8 @@ bool generalQuery::queryComposeToVec(const char* querySen){
 
 //创建partition,
 bool generalQuery:: createParition(){
-    cout << "创建分区：" << "子查询语句有：" << subStr.size() << endl;
-    cout << "ipRef.size() = " << ipRef.size() << endl;
+    //cout << "创建分区：" << "子查询语句有：" << subStr.size() << endl;
+    //cout << "ipRef.size() = " << ipRef.size() << endl;
     for(auto ip:ipRef){   //根据节点个数创建分区
         //size_t i = 1; i < ipRef.size() + 1; i++
         unordered_map<size_t, string> umap;
@@ -223,14 +228,14 @@ bool generalQuery:: createParition(){
 						umap[MaxSubID] = subStr.at(j);
 						umap_re[MaxSubID] = temp;
 						umap_name[MaxSubID] = subStrValName.at(j);
-						cout << "当前MaxSubID：" << MaxSubID << endl;
+						if(_debug_for_szc_) cout << "当前MaxSubID：" << MaxSubID << endl;
 						MaxSubID++;
 					}
                 }else{
 					umap[MaxSubID] = subStr.at(j);
 					umap_re[MaxSubID] = temp;
 					umap_name[MaxSubID] = subStrValName.at(j);
-					cout << "当前MaxSubID：" << MaxSubID << endl;
+					if(_debug_for_szc_) cout << "当前MaxSubID：" << MaxSubID << endl;
 					MaxSubID++;
                 }
             }
@@ -650,7 +655,7 @@ bool generalQuery::decomposePlan(PlanTree* generalPlanTree,size_t num){
 
 if(_debug_for_szc_) cout<<"进入分解计划"<<endl;
     
-    printTree(generalPlanTree->root);//这里的输出显示建树成功，plantree的结构的对的
+if(_debug_for_szc_) printTree(generalPlanTree->root);//这里的输出显示建树成功，plantree的结构的对的
 
 if(_debug_for_szc_) cout<<"↖分解之前plantree↗"<<endl;
 if(_debug_for_szc_) cout<<"开始正式分解"<<endl;
@@ -722,13 +727,14 @@ if(_debug_for_szc_){
             cout << endl;
         }
     }
-
-    //在这里把所有subQuery的查询语句都打印出来看看
-    for(auto a:idtosubq){
-        cout << "id = " << a.first << " subQuery查询语句:" << endl;
-        vector<string> queryvec = a.second->getQueryVec();
-        for(auto q:queryvec){
-            cout << a.first << " --- " << q << endl;
+    if(_debug_for_szc_){
+        //在这里把所有subQuery的查询语句都打印出来看看
+        for(auto a:idtosubq){
+            cout << "id = " << a.first << " subQuery查询语句:" << endl;
+            vector<string> queryvec = a.second->getQueryVec();
+            for(auto q:queryvec){
+                cout << a.first << " --- " << q << endl;
+            }
         }
     }
 
@@ -835,7 +841,7 @@ if(_debug_for_szc_){
                         if(r == rootSubQuery.end()){
                             //按照插入优先级，此时的子查询(a)属于一般子查询，因此插入
                             i->second->addSubref(a.ID, idtosubq[a.ID]);
-                            cout << "other subid: " << a.ID << endl;
+                            if(_debug_for_szc_) cout << "other subid: " << a.ID << endl;
                         }
                     }
                 }
@@ -963,10 +969,10 @@ bool generalQuery::mystart(){
     
 	int flag = 1;
     //发送连接计划
-    cout <<"clRef.size() = "<< clRef.size() << endl;
-    for(auto a:clRef){
-        cout << a.first << "\t" << a.second << endl;
-    }
+    // cout <<"clRef.size() = "<< clRef.size() << endl;
+    // for(auto a:clRef){
+    //     cout << a.first << "\t" << a.second << endl;
+    // }
 
     map<size_t, size_t> executeSubQueryOk;
     for (unordered_map<size_t, client*>::iterator iter = clRef.begin(); iter != clRef.end();iter++) {
@@ -1174,10 +1180,10 @@ bool generalQuery::sendSubqueryToSlave(){
                     //发送变量名
                     for(size_t k = 0; k < queryName.size(); k++){
                         string str1 = queryName.at(k);
-                        cout<<"变量名："<<str1<<endl;
+                        if(_debug_for_szc_) cout<<"变量名："<<str1<<endl;
                         cl->mySend((void*)str1.c_str(), str1.size());
                     }
-                    cout<<"查询语句"<<queryStr1.at(0)<<endl;
+                    if(_debug_for_szc_) cout<<"查询语句"<<queryStr1.at(0)<<endl;
                 }
             }else{
 				client* cl = clRef[pts.first];
@@ -1218,10 +1224,10 @@ bool generalQuery::sendSubqueryToSlave(){
 				//发送变量名
 				for (size_t k = 0; k < queryName.size(); k++) {
 					string str1 = queryName.at(k);
-					cout << "变量名：" << str1 << endl;
+					if(_debug_for_szc_) cout << "变量名：" << str1 << endl;
 					cl->mySend((void*)str1.c_str(), str1.size());
 				}
-				cout << "查询语句" << queryStr1.at(0) << endl;
+				if(_debug_for_szc_) cout << "查询语句" << queryStr1.at(0) << endl;
 			}
 		}
     }
@@ -1238,7 +1244,7 @@ bool generalQuery::createGlobalRef(){
         vector<size_t> sub = temp->getAllSubID();
         for(auto it_2 = sub.begin(); it_2 != sub.end(); it_2++){
             globalIDRef[*it_2] = it->first;
-            cout<<"id :"<<*it_2<<"在"<< it->first<<endl;
+            if(_debug_for_szc_) cout<<"id :"<<*it_2<<"在"<< it->first<<endl;
         }
     }
     //此时只是将最底层子查询放入了全局映射表中，由最底层查询而union和join生成的父查询没有放进去

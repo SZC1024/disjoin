@@ -487,7 +487,7 @@ void SlaveSPARQLParser::parseGraphPattern(PatternGroup &group)
 	Element object = parsePatternElement(group, localVars);
 	group.patterns.push_back(Pattern(subject, predicate, object));
 
-#define PARSER_DEBUG
+//#define PARSER_DEBUG
 #ifdef PARSER_DEBUG
 	//打印主语
 	if (subject.type == Element::Variable)

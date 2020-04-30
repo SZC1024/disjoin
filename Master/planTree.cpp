@@ -1,6 +1,6 @@
 #include "planTree.hpp"
 
-const int _debug_for_szc_ = 1;
+const int _debug_for_szc_ = 0;
 
 PlanTree::PlanTree(){
     root=NULL;

@@ -95,7 +95,7 @@ bool server::myRec(int conn, void *buffer){
     }
     size = head[0];
     index = 0;
-    cout << "size = " << size << endl;
+    //cout << "size = " << size << endl;
     memset(buffer, 0, size);
     //cout<<"接受串长度1："<<size<<endl;
     if(err <= 0){
@@ -225,7 +225,7 @@ bool server::ereaConnList(int conn){
     }
     else{
         pthread_rwlock_wrlock(&rwlock_slave);
-        cout<<"删除list"<<endl;
+        //cout<<"删除list"<<endl;
         connList.erase(it);
         pthread_rwlock_unlock(&rwlock_slave);
     }
