@@ -2,8 +2,8 @@
 //  comClass.cpp
 //  garphDatabase
 //
-//  Created by 周华健 on 2019/12/15.
-//  Copyright © 2019 周华健. All rights reserved.
+//  Created by songzc on 2019/12/15.
+//  Copyright © 2019 songzc. All rights reserved.
 //  通信类实现
 
 #include "comClass.hpp"

@@ -2,8 +2,8 @@
 //  comClassClient.cpp
 //  garphDatabase
 //
-//  Created by 周华健 on 2019/12/17.
-//  Copyright © 2019 周华健. All rights reserved.
+//  Created by songzc on 2019/12/17.
+//  Copyright © 2019 songzc. All rights reserved.
 //  slave节点客户端
 
 #include "comClassClient.hpp"
