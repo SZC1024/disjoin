@@ -1,11 +1,3 @@
-//
-//  common.h
-//  garphDatabase
-//
-//  Created by songzc on 2019/12/20.
-//  Copyright © 2019 songzc. All rights reserved.
-//
-
 #ifndef common_h
 #define common_h
 #include <stdio.h>

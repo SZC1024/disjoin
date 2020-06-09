@@ -1,11 +1,3 @@
-//
-//  queryClass.cpp
-//  garphDatabase
-//
-//  Created by songzc on 2019/12/13.
-//  Copyright © 2019 songzc. All rights reserved.
-//
-
 #include "queryClass.hpp"
 //#define _DEBUG_FOR_SZC_ 1
 //#define MAX_VAL_NUM 1024

@@ -1,9 +1,3 @@
-//
-//  masterToSlave.hpp
-//  garphDatabase
-//
-//  Created by songzc on 2019/12/16.
-//  Copyright © 2019 songzc. All rights reserved.
 //   Master和slave节点通信
 
 #ifndef masterToSlave_hpp

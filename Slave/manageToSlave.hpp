@@ -1,11 +1,3 @@
-//
-//  manageToSlave.hpp
-//  garphDatabase
-//
-//  Created by songzc on 2019/12/17.
-//  Copyright © 2019 songzc. All rights reserved.
-//
-
 #ifndef manageToSlave_hpp
 #define manageToSlave_hpp
 

@@ -1,9 +1,3 @@
-//
-//  generalQuery.cpp
-//  Master
-//
-//  Created by songzc on 2019/12/18.
-//  Copyright © 2019 songzc. All rights reserved.
 //  全局query
 
 #include "generalQuery.hpp"

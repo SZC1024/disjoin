@@ -1,9 +1,3 @@
-//
-//  client.cpp
-//  Master
-//
-//  Created by 周华健 on 2019/12/18.
-//  Copyright © 2019 周华健. All rights reserved.
 // Master节点的通信客户端
 
 #include "client.hpp"

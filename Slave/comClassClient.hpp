@@ -1,11 +1,3 @@
-//
-//  comClassClient.hpp
-//  garphDatabase
-//
-//  Created by songzc on 2019/12/17.
-//  Copyright © 2019 songzc. All rights reserved.
-//
-
 #ifndef comClassClient_hpp
 #define comClassClient_hpp
 

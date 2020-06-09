@@ -1,9 +1,3 @@
-//
-//  manageToSlave.cpp
-//  garphDatabase
-//
-//  Created by songzc on 2019/12/17.
-//  Copyright © 2019 songzc. All rights reserved.
 //  节点管理类
 
 #include "manageToSlave.hpp"

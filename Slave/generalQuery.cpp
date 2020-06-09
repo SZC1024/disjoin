@@ -1,9 +1,3 @@
-//
-//  generalQuery.cpp
-//  garphDatabase
-//
-//  Created by songzc on 2019/12/15.
-//  Copyright © 2019 songzc. All rights reserved.
 //  查询类实现
 #include "generalQuery.hpp"
 

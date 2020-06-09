@@ -1,11 +1,3 @@
-//
-//  main.cpp
-//  garphDatabase
-//
-//  Created by songzc on 2019/12/13.
-//  Copyright © 2019 songzc. All rights reserved.
-//
-
 #include <iostream>
 #include <unistd.h>
 #include <fstream>

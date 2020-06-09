@@ -1,11 +1,3 @@
-//
-//  queryClass.hpp
-//  garphDatabase
-//
-//  Created by songzc on 2019/12/13.
-//  Copyright © 2019 songzc. All rights reserved.
-//
-
 #ifndef queryClass_hpp
 #define queryClass_hpp
 /*  queryClass.h */

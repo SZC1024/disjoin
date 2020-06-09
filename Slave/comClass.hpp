@@ -1,9 +1,3 @@
-//
-//  comClass.hpp
-//  garphDatabase
-//
-//  Created by songzc on 2019/12/15.
-//  Copyright © 2019 songzc. All rights reserved.
 //slave节点的客户端和服务器端，slave对slave
 #ifndef comClass_hpp
 #define comClass_hpp
