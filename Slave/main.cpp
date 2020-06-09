@@ -108,30 +108,30 @@ int main(int argc, const char * argv[]) {
 	pthread_create(&master1, nullptr, serverStart_Master, (void*)manage);
 	pthread_detach(master1);
 
-	ofstream fout("system-stat.txt");
-	MEM_OCCUPY mem_stat;
-	CPU_OCCUPY cpu_stat1;
-	CPU_OCCUPY cpu_stat2;
+	// ofstream fout("system-stat.txt");
+	// MEM_OCCUPY mem_stat;
+	// CPU_OCCUPY cpu_stat1;
+	// CPU_OCCUPY cpu_stat2;
 	for (unsigned long long i = 0;; i += 1) {
 		//获取内存
-		get_memoccupy((MEM_OCCUPY*)&mem_stat);
-		fout << i << "s : ";
-		fout << "[MemTotal] = " << mem_stat.MemTotal;
-		fout << "\t[MemFree] = " << mem_stat.MemFree;
-		fout << "\t[Buffers] = " << mem_stat.Buffers;
-		fout << "\t[Cached] = " << mem_stat.Cached;
-		fout << "\t[SwapCached] = " << mem_stat.SwapCached;
+		// get_memoccupy((MEM_OCCUPY*)&mem_stat);
+		// fout << i << "s : ";
+		// fout << "[MemTotal] = " << mem_stat.MemTotal;
+		// fout << "\t[MemFree] = " << mem_stat.MemFree;
+		// fout << "\t[Buffers] = " << mem_stat.Buffers;
+		// fout << "\t[Cached] = " << mem_stat.Cached;
+		// fout << "\t[SwapCached] = " << mem_stat.SwapCached;
 		//第一次获取cpu使用情况
-		get_cpuoccupy((CPU_OCCUPY*)&cpu_stat1);
+		//get_cpuoccupy((CPU_OCCUPY*)&cpu_stat1);
 		usleep(1000000);//1秒
 		//第二次获取cpu使用情况
-		get_cpuoccupy((CPU_OCCUPY*)&cpu_stat2);
+		//get_cpuoccupy((CPU_OCCUPY*)&cpu_stat2);
 		//计算cpu使用率
-		double cpu_idle;
-		double cpu_use;
-		cal_cpuoccupy((CPU_OCCUPY*)&cpu_stat1, (CPU_OCCUPY*)&cpu_stat2, cpu_idle, cpu_use);
-		fout << "\tcpu_use(idle) = " << cpu_idle;
-		fout << "\tcpu_use(user+system+nice) = " << cpu_use << endl;
+		// double cpu_idle;
+		// double cpu_use;
+		// cal_cpuoccupy((CPU_OCCUPY*)&cpu_stat1, (CPU_OCCUPY*)&cpu_stat2, cpu_idle, cpu_use);
+		// fout << "\tcpu_use(idle) = " << cpu_idle;
+		// fout << "\tcpu_use(user+system+nice) = " << cpu_use << endl;
 		if(!(!manage->is_NULL_ServerToSlave() && !manage->is_NULL_ServerToMaster())) break;
 	}
     
