@@ -35,8 +35,8 @@ private:
     unordered_map<size_t, size_t> globalIDRef; //全局ID映射表,前者代表ID，后者代表节点
     vector<structPlan> plan;   //查询计划树，根节点编号0（暂时没有被用到过）
     string queryStr;      //查询语句
-    vector<string> subStr; //子查询语句
-    vector<vector<string>> subStrValName; //子查询语句变量名，和substr一一对应
+    vector<string> subStr; //子查询语句（只包含原始子查询）
+    vector<vector<string>> subStrValName; //子查询语句变量名，和substr一一对应（只包含原始子查询）
     unordered_map<size_t, client*> clRef;  //客户端映射
     unordered_map<size_t, string> ipRef; //子节点IP映射
     //map<size_t, client*> storeClRef;//存储节点客户端映射，如果host文件（-1标注）中指定有的话
@@ -46,10 +46,11 @@ private:
     //需要注意的是，当存储与计算分离时，任务下发时所使用的节点统计索引将失效，因为计算节点依赖的所有数据都将由存储节点通过网络传输过来，此时判断节点生成数据量无意义
     vector<vector<size_t> > result;
     size_t MaxSubID;
-    vector<string> finalResultName;   //最终的结果名
-    map<size_t, subQuery*> idtosubq;  //第一个参数为ID，所有子查询id映射
     
 public:
+    vector<string> finalResultName;   //最终的结果名
+    map<size_t, subQuery*> idtosubq;  //第一个参数为ID，所有子查询id映射
+
     generalQuery();
     generalQuery(size_t id, string str, int manualSplitQuery);  //生成查询类
     bool decomposeQueryAll();  //查询语句的分解

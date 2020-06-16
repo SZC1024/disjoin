@@ -2,24 +2,36 @@
 
 manageToMaster* manage;
 
-const char *queryToWeb(char *querySen, int manualSplitQuery){
+const char *queryToWeb(char *querySen, vector<string>* queryName, vector<vector<string> >* queryResult, int manualSplitQuery = 0){
     const char *result;
     vector<vector<size_t> > reVec;
+    vector<vector<string> > resultString;
     string str(querySen);
     size_t id = manage->addQuery(str,manualSplitQuery);
     reVec = manage->exeuteQuery(id);
     
     //cout<<"原始数据结果前十条:"<<endl;
-    cout << "result:" << endl;
+    //cout << "result:" << endl;
     for(size_t i = 0; i < reVec.size(); i++){
-        
-        if(i > 10) break;
+        //if(i > 10) break;
+        resultString.push_back(*(new vector<string>));
         for(size_t j = 0; j < reVec[i].size(); j++){
-            cout<<reVec[i].at(j)<<"\t";
+            //cout<<reVec[i].at(j)<<"\t";
+            resultString[i].push_back(getUriByID(reVec[i][j]));
         }
-        cout << endl;
+        //cout << endl;
     }
     cout<<"总结果条数："<< reVec.size() << endl;
+    //此时的resultString里每列的顺序和总连接计划树的root节点的变量名数组对应
+    //并不一定和原始查询的变量名顺序对应
+    //原始查询的变量名及顺序为generalQuery类中的finalResultName。
+    vector<string>* originalName = &(manage->queryRef[id]->finalResultName);
+    size_t rootid = manage->queryRef[id]->idtosubq.size();
+    vector<string> newName = manage->queryRef[id]->idtosubq[rootid]->getValNameVec();//newName的变量名顺序与resultString的列顺序一致。
+
+
+
+
     return result;
 }
 

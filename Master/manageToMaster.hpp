@@ -22,9 +22,10 @@ class manageToMaster{
     
 private:
     size_t ID;
-    unordered_map<size_t, generalQuery* > queryRef;
     unordered_map<size_t, string> ipRef;
 public:
+    unordered_map<size_t, generalQuery* > queryRef;
+
     static size_t queryId;
     manageToMaster();
     size_t addQuery(string str, int manualSplitQuery);

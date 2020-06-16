@@ -447,19 +447,6 @@ bool manageToSlave::getAndSendData_To_Master(){
                         temp->alterPlan(plan1);
                         cout << "连接计划变更完成" << endl;
                     }else cout << "连接计划为空，该节点无需执行" << endl;
-                    //else{
-                    //    //如果没有查询计划，返回0结果
-                    //    cout<<"没有连接计划，返回结果0"<<endl;
-                    //    size_t re_1 = 0; //子查询为0
-                    //    size_t re_2 = 0;  //返回零结果
-                    //    size_t re_3 = 1; //返回一条结果
-                    //    size_t re_4 = 1; //结果只有一列
-                    //    serverToMaster->mySend(*it, &id1, sizeof(size_t));
-                    //    serverToMaster->mySend(*it,&re_1 , sizeof(size_t));
-                    //    serverToMaster->mySend(*it,&re_3 , sizeof(size_t));
-                    //    serverToMaster->mySend(*it,&re_4 , sizeof(size_t));
-                    //    serverToMaster->mySend(*it,&re_2 , sizeof(size_t));
-                    //}
                     cout<<"连接计划接收完成"<<endl;
                     //如果想做到同步，可以在这里之后对master发送完成信号，当master收集到所有slave的完成信号之后再发送执行连接计划命令
                     size_t temp = 1;
