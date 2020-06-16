@@ -1,37 +1,47 @@
+//
+//  webAPI.cpp
+//  Master
+//
+//  Created by 周华健 on 2019/12/18.
+//  Copyright © 2019 周华健. All rights reserved.
+//
+
 #include "webAPI.hpp"
 
 manageToMaster* manage;
-
-const char *queryToWeb(char *querySen, vector<string>* queryName, vector<vector<string> >* queryResult, int manualSplitQuery = 0){
+char* reChar;
+const char *queryToWeb(char *querySen){
     const char *result;
     vector<vector<size_t> > reVec;
-    vector<vector<string> > resultString;
+    vector<vector<string> > strVec;
     string str(querySen);
-    size_t id = manage->addQuery(str,manualSplitQuery);
+    size_t id = manage->addQuery(str);
     reVec = manage->exeuteQuery(id);
-    
-    //cout<<"原始数据结果前十条:"<<endl;
-    //cout << "result:" << endl;
+    //将id转换成字符串
     for(size_t i = 0; i < reVec.size(); i++){
-        //if(i > 10) break;
-        resultString.push_back(*(new vector<string>));
-        for(size_t j = 0; j < reVec[i].size(); j++){
-            //cout<<reVec[i].at(j)<<"\t";
-            resultString[i].push_back(getUriByID(reVec[i][j]));
-        }
-        //cout << endl;
+	vector<string> temp;
+      for(size_t j = 0; j < reVec[i].size(); j++){
+ 	 string str;
+	 str = getUriByID(reVec[i].at(j));
+	 temp.push_back(str);
+	}
+ 	strVec.push_back(temp);
     }
-    cout<<"总结果条数："<< reVec.size() << endl;
-    //此时的resultString里每列的顺序和总连接计划树的root节点的变量名数组对应
-    //并不一定和原始查询的变量名顺序对应
-    //原始查询的变量名及顺序为generalQuery类中的finalResultName。
-    vector<string>* originalName = &(manage->queryRef[id]->finalResultName);
-    size_t rootid = manage->queryRef[id]->idtosubq.size();
-    vector<string> newName = manage->queryRef[id]->idtosubq[rootid]->getValNameVec();//newName的变量名顺序与resultString的列顺序一致。
-
-
-
-
+    //将结果转换成gao的格式
+    string strRes;
+    size_t count = strVec.size();
+    strRes = to_string(count) + "|";
+    for(size_t i = 0; i < strVec.size(); i++){
+	for(size_t j = 0; j < strVec[i].size(); j++){
+	   strRes += strVec[i].at(j);
+ 	   strRes += "|";
+	}
+    }
+    
+    //将string存放在堆上
+    reChar = (char *) malloc(strRes.size() + 1);
+    strcpy(reChar, strRes.c_str());
+    result = reChar;
     return result;
 }
 
@@ -187,5 +197,5 @@ void* startSlave(void* ip){
 }
 
 void resFree(){
-    
+    free(reChar);
 }
